@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gallery Login</title>
+<style>
+:root {
+  --bg:#0a0c12; --bg2:#0e1119; --panel:#131722; --panel2:#171c29;
+  --line:#242b3d; --text:#e8ebf2; --mut:#96a0b4;
+  --gold:#c9a86a; --gold-hi:#ddc089; --gold-dim:rgba(201,168,106,.12);
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+  --serif:Georgia,'Times New Roman',serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+}
+.login-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 40px;
+  width: 360px;
+}
+h1 { font-family: var(--serif); font-size: 22px; margin-bottom: 24px; color: var(--text); }
+h1 span { color: var(--gold); }
+input[type="password"] {
+  width: 100%; padding: 12px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg2); color: var(--text);
+  font-size: 16px; margin-bottom: 16px; font-family: var(--sans);
+}
+input[type="password"]:focus { outline: none; border-color: var(--gold); }
+button {
+  width: 100%; padding: 12px; border-radius: 6px;
+  border: 1px solid var(--gold); background: var(--gold-dim); color: var(--gold);
+  font-size: 16px; cursor: pointer; font-family: var(--sans);
+}
+button:hover { background: var(--gold); color: #0a0c12; }
+.error { color: #e05d6f; margin-bottom: 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="login-box">
+  <h1>CONSUME <span>Gallery</span></h1>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="POST">
+    <input type="password" name="password" placeholder="Password" autofocus>
+    <button type="submit">Enter</button>
+  </form>
+</div>
+</body>
+</html>

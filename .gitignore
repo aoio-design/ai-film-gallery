@@ -1,0 +1,8 @@
+# Your film data (never commit)
+data/
+shots/
+*.log
+# Python
+.venv/
+__pycache__/
+*.pyc
