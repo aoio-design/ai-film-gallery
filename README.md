@@ -52,3 +52,15 @@ Your AI agent can drive the gallery over two simple endpoints:
 ## License
 
 MIT — free to use, modify, and redistribute. Built for the [Agentic AI Film Production Studio](https://guide.aoiostudios.cloud) guide.
+
+## Helper scripts (`scripts/`)
+
+Scheduled-job scripts for keeping your studio alive (see the guide, Chapter 8 "Your automatic crew"):
+
+- `gallery-watchdog.sh` — every 5 min; restarts the gallery if it dies
+- `webui-tunnel-health.sh` — every 5 min; restarts the Web UI and Cloudflare tunnel if down
+- `backup.sh` — weekly; backs up config/skills/pipeline/gallery data to your private GitHub repo
+- `hermes-update-check.sh` — weekly; pings when a newer Hermes build exists (silent when current)
+- `webui-update-check.sh` — weekly; pings when a newer Web UI build exists (silent when current)
+
+Each prints output only when it acted (empty stdout = healthy = silent), so they work as `no_agent` cron scripts.
