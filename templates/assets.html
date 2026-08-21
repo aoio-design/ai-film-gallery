@@ -47,6 +47,8 @@ td .muted { color: var(--mut); }
 .bible-ta { width: 100%; min-width: 190px; background: var(--bg2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 12px; font-family: var(--sans); padding: 6px 8px; resize: vertical; min-height: 84px; }
 .bible-ta:focus { outline: none; border-color: var(--gold); }
 
+.cell-label { font-style: italic; font-size: 10px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+
 .table-scroll { overflow-x: auto; border-radius: 10px; }
 .bible-table { min-width: 1250px; }
 .bible-table tr.sub-row td { border-top: 1px dashed var(--line); }
@@ -87,17 +89,31 @@ td .muted { color: var(--mut); }
     {% for a in chars %}
     <tr>
       <td rowspan="2"><strong>{{ a.name }}</strong></td>
-      <td class="muted">{{ a.appearance or '—' }}</td>
-      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="personality" onchange="autoSave(this)" placeholder="Personality & backstory">{{ a.personality }}</textarea></td>
-      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="distinguishing" onchange="autoSave(this)" placeholder="Distinguishing features">{{ a.distinguishing }}</textarea></td>
       <td>
+        <div class="cell-label">Appearance</div>
+        <div class="muted">{{ a.appearance or '—' }}</div>
+      </td>
+      <td>
+        <div class="cell-label">Personality &amp; Backstory</div>
+        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="personality" onchange="autoSave(this)" placeholder="Personality & backstory">{{ a.personality }}</textarea>
+      </td>
+      <td>
+        <div class="cell-label">Distinguishing Features</div>
+        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="distinguishing" onchange="autoSave(this)" placeholder="Distinguishing features">{{ a.distinguishing }}</textarea>
+      </td>
+      <td>
+        <div class="cell-label">Reference</div>
         <div class="thumb">
           {% for im in a.images %}<img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im }}" onclick="openLightbox(this.src)" alt="{{ a.name }}">
           {% else %}<span class="muted">—</span>{% endfor %}
         </div>
       </td>
-      <td rowspan="2">{% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td rowspan="2">
+        <div class="cell-label">Status</div>
+        {% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% else %}<span class="muted">—</span>{% endif %}
+      </td>
       <td rowspan="2" class="fb-cell">
+        <div class="cell-label">Feedback to agent</div>
         <div class="fb-list" id="fb-{{ a.id }}">
           {% for fb in a.feedback[-2:] %}
           <div class="fb-item"><span class="fb-time">{{ fb.timestamp[:10] }}</span> {{ fb.text }}</div>
@@ -112,10 +128,20 @@ td .muted { color: var(--mut); }
       </td>
     </tr>
     <tr class="sub-row">
-      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="wardrobe" onchange="autoSave(this)" placeholder="Palette, silhouette, texture">{{ a.wardrobe }}</textarea></td>
-      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="emotional_range" onchange="autoSave(this)" placeholder="Emotional range cards">{{ a.emotional_range }}</textarea></td>
-      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="body_language" onchange="autoSave(this)" placeholder="Body language profile">{{ a.body_language }}</textarea></td>
       <td>
+        <div class="cell-label">Wardrobe / Style</div>
+        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="wardrobe" onchange="autoSave(this)" placeholder="Palette, silhouette, texture">{{ a.wardrobe }}</textarea>
+      </td>
+      <td>
+        <div class="cell-label">Emotional Range</div>
+        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="emotional_range" onchange="autoSave(this)" placeholder="Emotional range cards">{{ a.emotional_range }}</textarea>
+      </td>
+      <td>
+        <div class="cell-label">Body Language Profile</div>
+        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="body_language" onchange="autoSave(this)" placeholder="Body language profile">{{ a.body_language }}</textarea>
+      </td>
+      <td>
+        <div class="cell-label">Voice</div>
         {% for au in a.audios %}<audio controls preload="none" style="max-width:200px;height:28px;display:block;margin-bottom:4px;"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ au }}"></audio>
         {% else %}<span class="muted">{{ a.voice or '—' }}</span>{% endfor %}
       </td>
