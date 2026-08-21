@@ -74,7 +74,7 @@ td .muted { color: var(--mut); }
 
   <h2>Character Bible <span class="count">({{ chars|length }})</span></h2>
   <table>
-    <tr><th>Character</th><th>Role</th><th>Appearance</th><th>Voice</th><th>Reference</th><th>Status</th></tr>
+    <tr><th>Character</th><th>Role</th><th>Appearance</th><th>Voice</th><th>Reference</th><th>Status</th><th>Feedback to agent</th></tr>
     {% for a in chars %}
     <tr>
       <td><strong>{{ a.name }}</strong></td>
@@ -91,13 +91,26 @@ td .muted { color: var(--mut); }
         </div>
       </td>
       <td>{% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td class="fb-cell">
+        <div class="fb-list" id="fb-{{ a.id }}">
+          {% for fb in a.feedback[-2:] %}
+          <div class="fb-item"><span class="fb-time">{{ fb.timestamp[:10] }}</span> {{ fb.text }}</div>
+          {% else %}
+          <div class="muted">No feedback yet</div>
+          {% endfor %}
+        </div>
+        <div class="fb-row">
+          <textarea class="fb-input" id="fbi-{{ a.id }}" rows="1" placeholder="Feedback..."></textarea>
+          <button class="fb-send" onclick="sendFeedback('{{ scope_id }}','{{ a.id }}')">Send</button>
+        </div>
+      </td>
     </tr>
     {% else %}
-    <tr class="empty-row"><td colspan="6">No characters yet — the agent uploads them here after you approve the concept.</td></tr>
+    <tr class="empty-row"><td colspan="7">No characters yet — the agent uploads them here after you approve the concept.</td></tr>
     {% endfor %}
   </table>
 
-  <h2>Assets <span class="count">({{ others|length }})</span></h2>
+  <h2>Location Scenes and Props <span class="count">({{ others|length }})</span></h2>
   <table>
     <tr><th>Type</th><th>Name</th><th>Preview</th><th>Prompt</th><th>Status</th><th>Feedback</th></tr>
     {% for a in others %}
