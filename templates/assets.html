@@ -44,6 +44,12 @@ td .muted { color: var(--mut); }
 .prompt-ta { width: 100%; min-width: 240px; background: var(--bg2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 12px; font-family: var(--sans); padding: 6px 8px; resize: vertical; min-height: 40px; }
 .prompt-ta:focus { outline: none; border-color: var(--gold); }
 
+.bible-ta { width: 100%; min-width: 190px; background: var(--bg2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 12px; font-family: var(--sans); padding: 6px 8px; resize: vertical; min-height: 84px; }
+.bible-ta:focus { outline: none; border-color: var(--gold); }
+
+.table-scroll { overflow-x: auto; border-radius: 10px; }
+.bible-table { min-width: 1700px; }
+
 .fb-cell { min-width: 220px; }
 .fb-list { max-height: 60px; overflow-y: auto; margin-bottom: 5px; font-size: 11px; color: var(--mut); }
 .fb-item { background: var(--bg2); border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; }
@@ -73,13 +79,19 @@ td .muted { color: var(--mut); }
   {% set others = assets|rejectattr('type', 'equalto', 'Character')|list %}
 
   <h2>Character Bible <span class="count">({{ chars|length }})</span></h2>
-  <table>
-    <tr><th>Character</th><th>Role</th><th>Appearance</th><th>Voice</th><th>Reference</th><th>Status</th><th>Feedback to agent</th></tr>
+  <div class="table-scroll">
+  <table class="bible-table">
+    <tr><th>Character</th><th>Role</th><th>Appearance</th><th>Personality &amp; Backstory</th><th>Distinguishing Features</th><th>Wardrobe / Style</th><th>Emotional Range</th><th>Body Language Profile</th><th>Voice</th><th>Reference</th><th>Status</th><th>Feedback to agent</th></tr>
     {% for a in chars %}
     <tr>
       <td><strong>{{ a.name }}</strong></td>
       <td class="muted">{{ a.role or '—' }}</td>
       <td class="muted">{{ a.appearance or '—' }}</td>
+      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="personality" onchange="autoSave(this)" placeholder="Personality & backstory">{{ a.personality }}</textarea></td>
+      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="distinguishing" onchange="autoSave(this)" placeholder="Distinguishing features">{{ a.distinguishing }}</textarea></td>
+      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="wardrobe" onchange="autoSave(this)" placeholder="Palette, silhouette, texture">{{ a.wardrobe }}</textarea></td>
+      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="emotional_range" onchange="autoSave(this)" placeholder="Emotional range cards">{{ a.emotional_range }}</textarea></td>
+      <td><textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="body_language" onchange="autoSave(this)" placeholder="Body language profile">{{ a.body_language }}</textarea></td>
       <td>
         {% for au in a.audios %}<audio controls preload="none" style="max-width:200px;height:28px;display:block;margin-bottom:4px;"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ au }}"></audio>
         {% else %}<span class="muted">{{ a.voice or '—' }}</span>{% endfor %}
@@ -106,9 +118,10 @@ td .muted { color: var(--mut); }
       </td>
     </tr>
     {% else %}
-    <tr class="empty-row"><td colspan="7">No characters yet — the agent uploads them here after you approve the concept.</td></tr>
+    <tr class="empty-row"><td colspan="12">No characters yet — the agent uploads them here after you approve the concept.</td></tr>
     {% endfor %}
   </table>
+  </div>
 
   <h2>Location Scenes and Props <span class="count">({{ others|length }})</span></h2>
   <table>

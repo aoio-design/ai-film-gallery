@@ -299,6 +299,11 @@ def assets_page(assets_scope):
                 "type": meta.get("type", ""),
                 "role": meta.get("role", ""),
                 "appearance": meta.get("appearance", ""),
+                "personality": meta.get("personality", ""),
+                "distinguishing": meta.get("distinguishing", ""),
+                "wardrobe": meta.get("wardrobe", ""),
+                "emotional_range": meta.get("emotional_range", ""),
+                "body_language": meta.get("body_language", ""),
                 "voice": meta.get("voice", ""),
                 "status": meta.get("status", ""),
                 "description": meta.get("description", ""),
@@ -325,7 +330,7 @@ def update_asset(project_id, asset_id):
     meta = get_asset_meta(project_id, asset_id)
     field = request.form.get("field")
     value = request.form.get("value", "")
-    if field in ("name", "type", "role", "appearance", "voice", "status", "description", "prompt"):
+    if field in ("name", "type", "role", "appearance", "personality", "distinguishing", "wardrobe", "emotional_range", "body_language", "voice", "status", "description", "prompt"):
         meta[field] = value
         save_asset_meta(project_id, asset_id, meta)
         return jsonify({"ok": True})
