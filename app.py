@@ -270,6 +270,15 @@ def save_asset_meta(project_id, asset_id, meta):
     d.mkdir(parents=True, exist_ok=True)
     (d / "metadata.json").write_text(json.dumps(meta, indent=2))
 
+def _billing(role):
+    """Billing order for the Character Bible: leads first, then supporting."""
+    r = (role or "").strip().lower()
+    if r.startswith("lead") or r.startswith("main") or r.startswith("protagonist"):
+        return 0
+    if r.startswith("support") or r.startswith("supporting"):
+        return 1
+    return 2
+
 @app.route("/a/<assets_scope>")
 @login_required
 def assets_page(assets_scope):
@@ -298,6 +307,7 @@ def assets_page(assets_scope):
                 "name": meta.get("name", d.name),
                 "type": meta.get("type", ""),
                 "role": meta.get("role", ""),
+                "billing": _billing(meta.get("role", "")),
                 "appearance": meta.get("appearance", ""),
                 "personality": meta.get("personality", ""),
                 "distinguishing": meta.get("distinguishing", ""),
@@ -314,6 +324,9 @@ def assets_page(assets_scope):
                 "images": images,
                 "audios": audios,
             })
+    # Leads/main characters first, then supporting, then non-characters (stable, so
+    # the Location/Prop table keeps its alphabetical order).
+    assets.sort(key=lambda a: (a["billing"], a["name"].lower()))
     return render_template("assets.html", scope_id=assets_scope, scope_title=scope_title, assets=assets, season=season)
 
 @app.route("/a/<project_id>/<asset_id>/file/<filename>")
