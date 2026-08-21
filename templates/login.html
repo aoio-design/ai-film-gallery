@@ -12,6 +12,18 @@
   --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
   --serif:Georgia,'Times New Roman',serif;
 }
+/* light mode (same as Guide site) */
+html.light {
+  --bg:#f4f3ef; --bg2:#fbfaf7; --panel:#ffffff; --panel2:#f0eee7;
+  --line:#ded9cc; --text:#232a3a; --mut:#6b7280;
+  --gold:#a67c2e; --gold-hi:#8f6a22; --gold-dim:rgba(166,124,46,.12);
+  --ok:#2f8f63; --danger:#c24557;
+}
+#theme-toggle { position:fixed; top:14px; right:18px; z-index:120; cursor:pointer;
+  font-size:17px; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  background:var(--panel); border:1px solid var(--line); border-radius:50%;
+  box-shadow:0 6px 18px rgba(0,0,0,.25); user-select:none; }
+#theme-toggle:hover { border-color:var(--gold); }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: var(--sans);
@@ -45,6 +57,11 @@ button:hover { background: var(--gold); color: #0a0c12; }
 </style>
 </head>
 <body>
+<div id="theme-toggle" onclick="toggleTheme()" title="Toggle light / dark mode">🌙</div>
+<script>
+(function(){var t=localStorage.getItem('aio-theme');if(t==='light'){document.documentElement.classList.add('light');var b=document.getElementById('theme-toggle');if(b)b.textContent='☀️'}})();
+function toggleTheme(){var h=document.documentElement;h.classList.toggle('light');var l=h.classList.contains('light');localStorage.setItem('aio-theme',l?'light':'dark');document.getElementById('theme-toggle').textContent=l?'☀️':'🌙'}
+</script>
 <div class="login-box">
   <h1>CONSUME <span>Gallery</span></h1>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}

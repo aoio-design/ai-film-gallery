@@ -14,6 +14,18 @@
   --serif:Georgia,'Times New Roman',serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
+/* light mode (same as Guide site) */
+html.light {
+  --bg:#f4f3ef; --bg2:#fbfaf7; --panel:#ffffff; --panel2:#f0eee7;
+  --line:#ded9cc; --text:#232a3a; --mut:#6b7280;
+  --gold:#a67c2e; --gold-hi:#8f6a22; --gold-dim:rgba(166,124,46,.12);
+  --ok:#2f8f63; --danger:#c24557;
+}
+#theme-toggle { position:fixed; top:14px; right:18px; z-index:120; cursor:pointer;
+  font-size:17px; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  background:var(--panel); border:1px solid var(--line); border-radius:50%;
+  box-shadow:0 6px 18px rgba(0,0,0,.25); user-select:none; }
+#theme-toggle:hover { border-color:var(--gold); }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
 .wrap { max-width: 1200px; margin: 0 auto; }
@@ -71,6 +83,11 @@ td .muted { color: var(--mut); }
 </style>
 </head>
 <body>
+<div id="theme-toggle" onclick="toggleTheme()" title="Toggle light / dark mode">🌙</div>
+<script>
+(function(){var t=localStorage.getItem('aio-theme');if(t==='light'){document.documentElement.classList.add('light');var b=document.getElementById('theme-toggle');if(b)b.textContent='☀️'}})();
+function toggleTheme(){var h=document.documentElement;h.classList.toggle('light');var l=h.classList.contains('light');localStorage.setItem('aio-theme',l?'light':'dark');document.getElementById('theme-toggle').textContent=l?'☀️':'🌙'}
+</script>
 <div class="wrap">
   <div class="header">
     <a href="{{ '/s/' + season.id if season else '/projects' }}" class="back">← {{ 'Season' if season else 'Gallery' }}</a>
@@ -84,14 +101,13 @@ td .muted { color: var(--mut); }
   <h2>Character Bible <span class="count">({{ chars|length }})</span></h2>
   <div class="table-scroll">
   <table class="bible-table">
-    <tr><th rowspan="2">Character</th><th>Appearance</th><th>Personality &amp; Backstory</th><th>Distinguishing Features</th><th>Reference</th><th rowspan="2">Status</th><th rowspan="2">Feedback to agent</th></tr>
-    <tr><th>Wardrobe / Style</th><th>Emotional Range</th><th>Body Language Profile</th><th>Voice</th></tr>
+    <tr><th>Character</th></tr>
     {% for a in chars %}
     <tr>
       <td rowspan="2"><strong>{{ a.name }}</strong></td>
       <td>
         <div class="cell-label">Appearance</div>
-        <div class="muted">{{ a.appearance or '—' }}</div>
+        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="appearance" onchange="autoSave(this)" placeholder="Appearance">{{ a.appearance }}</textarea>
       </td>
       <td>
         <div class="cell-label">Personality &amp; Backstory</div>
