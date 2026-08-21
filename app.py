@@ -125,7 +125,64 @@ def gallery(project_id):
             [f.name for f in sd.iterdir() if f.suffix.lower() in audio_ext]
         ) if sd.exists() else []
 
-    return render_template("gallery.html", project=project)
+    # Episode script: use the saved editable copy if it exists, else assemble
+    # from each shot's script field (with [ShotID] markers for orientation).
+    ep_file = SHOTS_DIR / project_id / "_episode_script.json"
+    episode = {"text": "", "feedback": []}
+    if ep_file.exists():
+        try:
+            episode = json.loads(ep_file.read_text())
+        except Exception:
+            episode = {"text": "", "feedback": []}
+    if not episode.get("text"):
+        parts = []
+        for shot in project["shots"]:
+            s = (shot.get("script") or "").strip()
+            if s:
+                parts.append(f"[{shot['id']}]\n{s}")
+        episode["text"] = "\n\n".join(parts) or "(no script yet)"
+    episode.setdefault("feedback", [])
+
+    return render_template("gallery.html", project=project, episode=episode)
+
+@app.route("/p/<project_id>/script", methods=["POST"])
+@login_required
+def save_episode_script(project_id):
+    text = request.form.get("text", "")
+    f = SHOTS_DIR / project_id / "_episode_script.json"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    data = {}
+    if f.exists():
+        try:
+            data = json.loads(f.read_text())
+        except Exception:
+            data = {}
+    data["text"] = text
+    f.write_text(json.dumps(data, indent=2))
+    return jsonify({"ok": True})
+
+@app.route("/p/<project_id>/script_feedback", methods=["POST"])
+@login_required
+def add_episode_script_feedback(project_id):
+    text = request.form.get("text", "").strip()
+    if not text:
+        return jsonify({"ok": False, "error": "Empty feedback"}), 400
+    f = SHOTS_DIR / project_id / "_episode_script.json"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    data = {}
+    if f.exists():
+        try:
+            data = json.loads(f.read_text())
+        except Exception:
+            data = {}
+    data.setdefault("feedback", []).append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "text": text
+    })
+    if "text" not in data:
+        data["text"] = ""
+    f.write_text(json.dumps(data, indent=2))
+    return jsonify({"ok": True})
 
 @app.route("/p/<project_id>/<shot_id>/file/<filename>")
 @login_required
