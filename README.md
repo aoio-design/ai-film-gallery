@@ -64,3 +64,5 @@ Scheduled-job scripts for keeping your studio alive (see the guide, Chapter 8 "Y
 - `webui-update-check.sh` — weekly; pings when a newer Web UI build exists (silent when current)
 
 Each prints output only when it acted (empty stdout = healthy = silent), so they work as `no_agent` cron scripts.
+
+- `gallery-feedback-watch.py` — every 30 min; silent, prints a digest when new shot/script feedback arrives (first run baselines silently)

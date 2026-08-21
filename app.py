@@ -220,6 +220,89 @@ def add_feedback(project_id, shot_id):
     save_shot_meta(project_id, shot_id, meta)
     return jsonify({"ok": True})
 
+APP_ASSETS_DIR = BASE_DIR / "assets"
+
+def get_asset_meta(project_id, asset_id):
+    f = APP_ASSETS_DIR / project_id / asset_id / "metadata.json"
+    if f.exists():
+        try:
+            return json.loads(f.read_text())
+        except Exception:
+            return {}
+    return {}
+
+def save_asset_meta(project_id, asset_id, meta):
+    d = APP_ASSETS_DIR / project_id / asset_id
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "metadata.json").write_text(json.dumps(meta, indent=2))
+
+@app.route("/a/<project_id>")
+@login_required
+def assets_page(project_id):
+    data = load_projects()
+    project = None
+    for p in data["projects"]:
+        if p["id"] == project_id:
+            project = p
+            break
+    if not project:
+        abort(404)
+    assets = []
+    adir = APP_ASSETS_DIR / project_id
+    if adir.exists():
+        for d in sorted(adir.iterdir()):
+            if not d.is_dir() or d.name.startswith("."):
+                continue
+            meta = get_asset_meta(project_id, d.name)
+            files = sorted(f.name for f in d.iterdir() if f.is_file() and f.name != "metadata.json")
+            image = next((f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))), None)
+            audio = next((f for f in files if f.lower().endswith((".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aac"))), None)
+            assets.append({
+                "id": d.name,
+                "name": meta.get("name", d.name),
+                "type": meta.get("type", ""),
+                "description": meta.get("description", ""),
+                "prompt": meta.get("prompt", ""),
+                "feedback": meta.get("feedback", []),
+                "image": image,
+                "audio": audio,
+            })
+    return render_template("assets.html", project=project, assets=assets)
+
+@app.route("/a/<project_id>/<asset_id>/file/<filename>")
+@login_required
+def asset_file(project_id, asset_id, filename):
+    d = APP_ASSETS_DIR / project_id / asset_id
+    if not d.exists():
+        abort(404)
+    return send_from_directory(str(d), filename)
+
+@app.route("/a/<project_id>/<asset_id>/update", methods=["POST"])
+@login_required
+def update_asset(project_id, asset_id):
+    meta = get_asset_meta(project_id, asset_id)
+    field = request.form.get("field")
+    value = request.form.get("value", "")
+    if field in ("name", "type", "description", "prompt"):
+        meta[field] = value
+        save_asset_meta(project_id, asset_id, meta)
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "Unknown field"}), 400
+
+@app.route("/a/<project_id>/<asset_id>/feedback", methods=["POST"])
+@login_required
+def add_asset_feedback(project_id, asset_id):
+    text = request.form.get("text", "").strip()
+    if not text:
+        return jsonify({"ok": False, "error": "Empty feedback"}), 400
+    meta = get_asset_meta(project_id, asset_id)
+    meta.setdefault("feedback", []).append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "text": text
+    })
+    save_asset_meta(project_id, asset_id, meta)
+    return jsonify({"ok": True})
+
 if __name__ == "__main__":
     port = int(os.environ.get("GALLERY_PORT", 5001))
     app.run(host="0.0.0.0", port=port, debug=False)
