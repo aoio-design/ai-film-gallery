@@ -84,6 +84,7 @@ body {
   display: flex;
   background: var(--bg2);
   border-bottom: 1px solid var(--line);
+  height: 45vh;          /* bounded default — content must never size it (would push cards off-screen) */
   min-height: 120px;
 }
 .pane {
@@ -325,7 +326,6 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
 <div class="header">
   <a href="/projects" class="back">← Back</a>
   <h1>{{ project.title }}</h1>
-  <span class="format-badge">{{ 'Director (LTX)' if project.format == 'director' else 'Standard (5-row)' }}</span>
   <span class="shot-counter">{{ project.shots|length }} shots — scroll left/right</span>
 </div>
 
@@ -391,15 +391,9 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
 
     {% if project.format == 'director' %}
     <!-- ============ DIRECTOR FORMAT (LTX) ============ -->
-    <!-- Row 1: Script -->
+    <!-- Row 1: Audio files (multiple supported) -->
     <div class="row">
-      <div class="row-label"><span>1</span> Script</div>
-      <div class="script-box">{{ shot.script or "(not set)" }}</div>
-    </div>
-
-    <!-- Row 2: Audio files (multiple supported) -->
-    <div class="row">
-      <div class="row-label"><span>2</span> Audio</div>
+      <div class="row-label"><span>1</span> Audio</div>
       <div class="audio-box">
         {% if shot.audio_files %}
           {% for af in shot.audio_files %}
@@ -426,13 +420,13 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
 
     <!-- Row 3: Video Prompt -->
     <div class="row">
-      <div class="row-label"><span>3</span> Video Prompt</div>
+      <div class="row-label"><span>2</span> Video Prompt</div>
       <textarea class="prompt-box" data-project="{{ project.id }}" data-shot="{{ shot.id }}" data-field="video_prompt" onchange="autoSave(this)">{{ shot.video_prompt }}</textarea>
     </div>
 
     <!-- Row 4: Video -->
     <div class="row">
-      <div class="row-label"><span>4</span> Video</div>
+      <div class="row-label"><span>3</span> Video</div>
       <div class="media-box">
         {% if shot.has_video %}
         <video controls playsinline>
@@ -445,21 +439,15 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
     </div>
     {% else %}
     <!-- ============ STANDARD FORMAT (5-ROW) ============ -->
-    <!-- Row 1: Script -->
+    <!-- Row 1: Image Prompt -->
     <div class="row">
-      <div class="row-label"><span>1</span> Script</div>
-      <div class="script-box">{{ shot.script or "(not set)" }}</div>
-    </div>
-
-    <!-- Row 2: Image Prompt -->
-    <div class="row">
-      <div class="row-label"><span>2</span> Image Prompt</div>
+      <div class="row-label"><span>1</span> Image Prompt</div>
       <textarea class="prompt-box" data-project="{{ project.id }}" data-shot="{{ shot.id }}" data-field="image_prompt" onchange="autoSave(this)">{{ shot.image_prompt }}</textarea>
     </div>
 
     <!-- Row 3: Image -->
     <div class="row">
-      <div class="row-label"><span>3</span> Image</div>
+      <div class="row-label"><span>2</span> Image</div>
       <div class="media-box">
         {% if shot.has_image %}
         <img src="/p/{{ project.id }}/{{ shot.id }}/file/image.png" onclick="openLightbox(this.src)" alt="{{ shot.id }} image">
@@ -471,13 +459,13 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
 
     <!-- Row 4: Video Prompt -->
     <div class="row">
-      <div class="row-label"><span>4</span> Video Prompt</div>
+      <div class="row-label"><span>3</span> Video Prompt</div>
       <textarea class="prompt-box" data-project="{{ project.id }}" data-shot="{{ shot.id }}" data-field="video_prompt" onchange="autoSave(this)">{{ shot.video_prompt }}</textarea>
     </div>
 
     <!-- Row 5: Video -->
     <div class="row">
-      <div class="row-label"><span>5</span> Video</div>
+      <div class="row-label"><span>4</span> Video</div>
       <div class="media-box">
         {% if shot.has_video %}
         <video controls playsinline>
@@ -563,6 +551,7 @@ const PLAYLIST = [
     nowEl.textContent = item.id + (item.desc ? ' — ' + item.desc : '');
     highlightCard(item.id);
     followCard(item.id);
+    if (window.syncScriptToShot) window.syncScriptToShot(item.id);
   }
 
   function loadClip(i) {
@@ -630,6 +619,55 @@ const PLAYLIST = [
       .catch(() => {});
   });
   renderLines();
+})();
+
+/* ---------- Script ↔ cards sync: scroll the script pane to the visible shot ---------- */
+(function () {
+  const ta = document.getElementById('episodeScript');
+  const scrollArea = document.getElementById('scrollArea');
+  if (!ta || !scrollArea) return;
+  let shotLines = {};   // shotId -> 0-based line index of its [ShotID] marker
+  let lineH = 18.6;
+
+  function buildMap() {
+    shotLines = {};
+    const lines = ta.value.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^\[([^\]]+)\]\s*$/);
+      if (m) shotLines[m[1]] = i;
+    }
+    const cs = getComputedStyle(ta);
+    const lh = parseFloat(cs.lineHeight);
+    if (lh > 0) lineH = lh;
+  }
+  ta.addEventListener('input', buildMap);
+  buildMap();
+
+  window.syncScriptToShot = function (shotId) {
+    if (!shotLines[shotId]) return;
+    ta.scrollTop = Math.max(0, (shotLines[shotId] - 2) * lineH);
+    const gutter = document.getElementById('lineNums');
+    if (gutter) gutter.scrollTop = ta.scrollTop;
+  };
+
+  // On bottom-section scroll: sync to the card nearest the left edge (debounced)
+  let scrollTimer = null;
+  scrollArea.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const cards = scrollArea.querySelectorAll('.shot');
+      if (!cards.length) return;
+      let best = null, bestDist = Infinity;
+      const sl = scrollArea.scrollLeft;
+      for (const card of cards) {
+        const d = Math.abs(card.offsetLeft - sl);
+        if (d < bestDist) { bestDist = d; best = card; }
+      }
+      if (best && bestDist < 400) {
+        window.syncScriptToShot(best.id.replace('shot-', ''));
+      }
+    }, 120);
+  });
 })();
 
 /* ---------- Episode script feedback to agent ---------- */
