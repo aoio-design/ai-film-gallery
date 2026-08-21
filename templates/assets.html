@@ -81,12 +81,13 @@ td .muted { color: var(--mut); }
       <td class="muted">{{ a.role or '—' }}</td>
       <td class="muted">{{ a.appearance or '—' }}</td>
       <td>
-        {% if a.audio %}<audio controls preload="none" style="max-width:200px;height:28px;"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ a.audio }}"></audio>
-        {% else %}<span class="muted">{{ a.voice or '—' }}</span>{% endif %}
+        {% for au in a.audios %}<audio controls preload="none" style="max-width:200px;height:28px;display:block;margin-bottom:4px;"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ au }}"></audio>
+        {% else %}<span class="muted">{{ a.voice or '—' }}</span>{% endfor %}
       </td>
       <td>
         <div class="thumb">
-          {% if a.image %}<img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ a.image }}" onclick="openLightbox(this.src)" alt="{{ a.name }}">{% else %}<span class="muted">—</span>{% endif %}
+          {% for im in a.images %}<img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im }}" onclick="openLightbox(this.src)" alt="{{ a.name }}">
+          {% else %}<span class="muted">—</span>{% endfor %}
         </div>
       </td>
       <td>{% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
@@ -98,19 +99,21 @@ td .muted { color: var(--mut); }
 
   <h2>Assets <span class="count">({{ others|length }})</span></h2>
   <table>
-    <tr><th>Type</th><th>Name</th><th>Preview</th><th>Prompt</th><th>Feedback</th></tr>
+    <tr><th>Type</th><th>Name</th><th>Preview</th><th>Prompt</th><th>Status</th><th>Feedback</th></tr>
     {% for a in others %}
     <tr>
       <td>{% if a.type %}<span class="status">{{ a.type }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
       <td><strong>{{ a.name }}</strong></td>
       <td>
         <div class="thumb">
-          {% if a.image %}<img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ a.image }}" onclick="openLightbox(this.src)" alt="{{ a.name }}">
-          {% elif a.audio %}<audio controls preload="none"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ a.audio }}"></audio>
-          {% else %}<span class="muted">—</span>{% endif %}
+          {% for im in a.images %}<img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im }}" onclick="openLightbox(this.src)" alt="{{ a.name }}">
+          {% else %}<span class="muted">—</span>{% endfor %}
+          {% for au in a.audios %}<audio controls preload="none"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ au }}"></audio>
+          {% endfor %}
         </div>
       </td>
       <td><textarea class="prompt-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="prompt" onchange="autoSave(this)" placeholder="Prompt">{{ a.prompt }}</textarea></td>
+      <td>{% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
       <td class="fb-cell">
         <div class="fb-list" id="fb-{{ a.id }}">
           {% for fb in a.feedback[-2:] %}
@@ -126,7 +129,7 @@ td .muted { color: var(--mut); }
       </td>
     </tr>
     {% else %}
-    <tr class="empty-row"><td colspan="5">No assets yet — the agent uploads locations, props and voices here for your review.</td></tr>
+    <tr class="empty-row"><td colspan="6">No assets yet — the agent uploads locations, props and voices here for your review.</td></tr>
     {% endfor %}
   </table>
 </div>

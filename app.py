@@ -291,8 +291,8 @@ def assets_page(assets_scope):
                 continue
             meta = get_asset_meta(assets_scope, d.name)
             files = sorted(f.name for f in d.iterdir() if f.is_file() and f.name != "metadata.json")
-            image = next((f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))), None)
-            audio = next((f for f in files if f.lower().endswith((".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aac"))), None)
+            images = [f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))]
+            audios = [f for f in files if f.lower().endswith((".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aac"))]
             assets.append({
                 "id": d.name,
                 "name": meta.get("name", d.name),
@@ -304,8 +304,10 @@ def assets_page(assets_scope):
                 "description": meta.get("description", ""),
                 "prompt": meta.get("prompt", ""),
                 "feedback": meta.get("feedback", []),
-                "image": image,
-                "audio": audio,
+                "image": images[0] if images else None,
+                "audio": audios[0] if audios else None,
+                "images": images,
+                "audios": audios,
             })
     return render_template("assets.html", scope_id=assets_scope, scope_title=scope_title, assets=assets, season=season)
 
