@@ -49,6 +49,16 @@ def load_projects():
         return json.loads(PROJECTS_FILE.read_text())
     return {"projects": []}
 
+def load_seasons(data=None):
+    data = data or load_projects()
+    return data.get("seasons", [])
+
+def get_season_for_episode(episode_id, data=None):
+    for s in load_seasons(data):
+        if episode_id in s.get("episodes", []):
+            return s
+    return None
+
 def save_projects(data):
     PROJECTS_FILE.write_text(json.dumps(data, indent=2))
 
@@ -92,7 +102,30 @@ def logout():
 @login_required
 def project_list():
     data = load_projects()
-    return render_template("project_list.html", projects=data["projects"])
+    seasons = load_seasons(data)
+    if seasons:
+        # Season list: each season shows its episode count + assets link
+        for s in seasons:
+            s["episode_count"] = len(s.get("episodes", []))
+            s["has_assets"] = (APP_ASSETS_DIR / s["id"]).exists()
+        return render_template("project_list.html", seasons=seasons, projects=[])
+    return render_template("project_list.html", seasons=[], projects=data["projects"])
+
+@app.route("/s/<season_id>")
+@login_required
+def season_page(season_id):
+    data = load_projects()
+    season = next((s for s in load_seasons(data) if s["id"] == season_id), None)
+    if not season:
+        abort(404)
+    episodes = []
+    for ep_id in season.get("episodes", []):
+        ep = next((p for p in data["projects"] if p["id"] == ep_id), None)
+        if ep:
+            episodes.append({"id": ep["id"], "title": ep.get("title", ep["id"]), "shots": len(ep.get("shots", []))})
+    season["episodes"] = episodes
+    season["has_assets"] = (APP_ASSETS_DIR / season_id).exists()
+    return render_template("season.html", season=season)
 
 @app.route("/p/<project_id>")
 @login_required
@@ -143,7 +176,8 @@ def gallery(project_id):
         episode["text"] = "\n\n".join(parts) or "(no script yet)"
     episode.setdefault("feedback", [])
 
-    return render_template("gallery.html", project=project, episode=episode)
+    season = get_season_for_episode(project_id)
+    return render_template("gallery.html", project=project, episode=episode, season=season)
 
 @app.route("/p/<project_id>/script", methods=["POST"])
 @login_required
@@ -236,24 +270,26 @@ def save_asset_meta(project_id, asset_id, meta):
     d.mkdir(parents=True, exist_ok=True)
     (d / "metadata.json").write_text(json.dumps(meta, indent=2))
 
-@app.route("/a/<project_id>")
+@app.route("/a/<assets_scope>")
 @login_required
-def assets_page(project_id):
+def assets_page(assets_scope):
     data = load_projects()
-    project = None
-    for p in data["projects"]:
-        if p["id"] == project_id:
-            project = p
-            break
-    if not project:
-        abort(404)
+    scope_title = assets_scope
+    # Prefer a season scope; fall back to a project scope.
+    season = next((s for s in load_seasons(data) if s["id"] == assets_scope), None)
+    if season:
+        scope_title = season.get("title", assets_scope)
+    else:
+        proj = next((p for p in data["projects"] if p["id"] == assets_scope), None)
+        if proj:
+            scope_title = proj.get("title", assets_scope)
     assets = []
-    adir = APP_ASSETS_DIR / project_id
+    adir = APP_ASSETS_DIR / assets_scope
     if adir.exists():
         for d in sorted(adir.iterdir()):
             if not d.is_dir() or d.name.startswith("."):
                 continue
-            meta = get_asset_meta(project_id, d.name)
+            meta = get_asset_meta(assets_scope, d.name)
             files = sorted(f.name for f in d.iterdir() if f.is_file() and f.name != "metadata.json")
             image = next((f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))), None)
             audio = next((f for f in files if f.lower().endswith((".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aac"))), None)
@@ -261,13 +297,17 @@ def assets_page(project_id):
                 "id": d.name,
                 "name": meta.get("name", d.name),
                 "type": meta.get("type", ""),
+                "role": meta.get("role", ""),
+                "appearance": meta.get("appearance", ""),
+                "voice": meta.get("voice", ""),
+                "status": meta.get("status", ""),
                 "description": meta.get("description", ""),
                 "prompt": meta.get("prompt", ""),
                 "feedback": meta.get("feedback", []),
                 "image": image,
                 "audio": audio,
             })
-    return render_template("assets.html", project=project, assets=assets)
+    return render_template("assets.html", scope_id=assets_scope, scope_title=scope_title, assets=assets, season=season)
 
 @app.route("/a/<project_id>/<asset_id>/file/<filename>")
 @login_required
@@ -283,7 +323,7 @@ def update_asset(project_id, asset_id):
     meta = get_asset_meta(project_id, asset_id)
     field = request.form.get("field")
     value = request.form.get("value", "")
-    if field in ("name", "type", "description", "prompt"):
+    if field in ("name", "type", "role", "appearance", "voice", "status", "description", "prompt"):
         meta[field] = value
         save_asset_meta(project_id, asset_id, meta)
         return jsonify({"ok": True})

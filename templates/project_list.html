@@ -36,6 +36,7 @@ a:hover { color: var(--gold-hi); text-decoration: underline; }
 .project-card:hover { border-color: var(--gold); background: var(--gold-dim); }
 .project-card h2 { font-size: 18px; margin-bottom: 6px; color: var(--text); }
 .project-card .meta { color: var(--mut); font-size: 13px; }
+.project-card .links { margin-top: 12px; display: flex; gap: 16px; font-size: 13px; }
 .logout { float: right; color: var(--mut); font-size: 13px; }
 .logout:hover { color: var(--gold); }
 </style>
@@ -45,9 +46,19 @@ a:hover { color: var(--gold-hi); text-decoration: underline; }
   <a href="/logout" class="logout">Logout</a>
   <h1>CONSUME <span>Gallery</span></h1>
   <p class="subtitle">AI film production — shot-by-shot gallery</p>
-  {% if not projects %}
+  {% if not projects and not seasons %}
     <p>No projects yet.</p>
   {% endif %}
+  {% for s in seasons %}
+  <div class="project-card">
+    <h2>{{ s.title }}</h2>
+    <div class="meta">{{ s.episode_count }} episodes</div>
+    <div class="links">
+      <a href="/s/{{ s.id }}">Open season →</a>
+      <a href="/a/{{ s.id }}">Character Bible &amp; Assets →</a>
+    </div>
+  </div>
+  {% endfor %}
   {% for p in projects %}
   <a href="/p/{{ p.id }}">
     <div class="project-card">
