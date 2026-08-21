@@ -167,6 +167,14 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
 
 .pane-player .player-stage video { max-height: 30vh; }
 
+.bottom-title {
+  flex-shrink: 0;
+  padding: 8px 24px 0;
+  font-family: var(--serif);
+  font-size: 12px; color: var(--gold);
+  letter-spacing: .06em; text-transform: uppercase;
+}
+
 /* Horizontal scrollable area */
 .scroll-area {
   flex: 1; overflow-x: auto; overflow-y: hidden;
@@ -379,6 +387,7 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
 </div>
 <div class="divider-h" id="dividerH" title="Drag to resize"></div>
 
+<div class="bottom-title">Video Generation</div>
 <div class="scroll-area" id="scrollArea">
   {% for shot in project.shots %}
   <div class="shot" id="shot-{{ shot.id }}">
@@ -390,10 +399,22 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
     </div>
 
     {% if project.format == 'director' %}
-    <!-- ============ DIRECTOR FORMAT (LTX) ============ -->
-    <!-- Row 1: Audio files (multiple supported) -->
+    <!-- ============ DIRECTOR FORMAT ============ -->
+    <!-- Row 1: Image -->
     <div class="row">
-      <div class="row-label"><span>1</span> Audio</div>
+      <div class="row-label"><span>1</span> Image</div>
+      <div class="media-box">
+        {% if shot.has_image %}
+        <img src="/p/{{ project.id }}/{{ shot.id }}/file/image.png" onclick="openLightbox(this.src)" alt="{{ shot.id }} image">
+        {% else %}
+        <div class="empty">(no image yet)</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Row 2: Audio files (multiple supported) -->
+    <div class="row">
+      <div class="row-label"><span>2</span> Audio</div>
       <div class="audio-box">
         {% if shot.audio_files %}
           {% for af in shot.audio_files %}
@@ -420,13 +441,13 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
 
     <!-- Row 3: Video Prompt -->
     <div class="row">
-      <div class="row-label"><span>2</span> Video Prompt</div>
+      <div class="row-label"><span>3</span> Video Prompt</div>
       <textarea class="prompt-box" data-project="{{ project.id }}" data-shot="{{ shot.id }}" data-field="video_prompt" onchange="autoSave(this)">{{ shot.video_prompt }}</textarea>
     </div>
 
     <!-- Row 4: Video -->
     <div class="row">
-      <div class="row-label"><span>3</span> Video</div>
+      <div class="row-label"><span>4</span> Video</div>
       <div class="media-box">
         {% if shot.has_video %}
         <video controls playsinline>
