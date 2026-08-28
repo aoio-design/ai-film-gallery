@@ -2,6 +2,9 @@
 data/
 shots/
 *.log
+# Accounts + session secret (never commit)
+accounts/users.db
+.secret
 # Python
 .venv/
 __pycache__/

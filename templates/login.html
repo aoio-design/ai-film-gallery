@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gallery Login</title>
+<title>AI Film Studio — Login</title>
 <style>
 :root {
   --bg:#0a0c12; --bg2:#0e1119; --panel:#131722; --panel2:#171c29;
@@ -41,12 +41,12 @@ body {
 }
 h1 { font-family: var(--serif); font-size: 22px; margin-bottom: 24px; color: var(--text); }
 h1 span { color: var(--gold); }
-input[type="password"] {
+input[type="password"], input[type="email"] {
   width: 100%; padding: 12px; border-radius: 6px;
   border: 1px solid var(--line); background: var(--bg2); color: var(--text);
-  font-size: 16px; margin-bottom: 16px; font-family: var(--sans);
+  font-size: 16px; margin-bottom: 14px; font-family: var(--sans);
 }
-input[type="password"]:focus { outline: none; border-color: var(--gold); }
+input[type="password"]:focus, input[type="email"]:focus { outline: none; border-color: var(--gold); }
 button {
   width: 100%; padding: 12px; border-radius: 6px;
   border: 1px solid var(--gold); background: var(--gold-dim); color: var(--gold);
@@ -54,6 +54,8 @@ button {
 }
 button:hover { background: var(--gold); color: #0a0c12; }
 .error { color: #e05d6f; margin-bottom: 16px; font-size: 14px; }
+.hint { color: var(--mut); font-size: 12.5px; line-height: 1.55; margin-top: 18px;
+  border-top: 1px solid var(--line); padding-top: 14px; }
 </style>
 </head>
 <body>
@@ -63,12 +65,23 @@ button:hover { background: var(--gold); color: #0a0c12; }
 function toggleTheme(){var h=document.documentElement;h.classList.toggle('light');var l=h.classList.contains('light');localStorage.setItem('aio-theme',l?'light':'dark');document.getElementById('theme-toggle').textContent=l?'☀️':'🌙'}
 </script>
 <div class="login-box">
-  <h1>CONSUME <span>Gallery</span></h1>
+  <h1>AI Film <span>Studio</span></h1>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  {% if bootstrap %}
   <form method="POST">
-    <input type="password" name="password" placeholder="Password" autofocus>
+    <input type="password" name="password" placeholder="Setup password" autofocus autocomplete="current-password">
     <button type="submit">Enter</button>
   </form>
+  <div class="hint">First-run setup mode. Ask your agent to create your account, then sign in with your email.</div>
+  {% else %}
+  <form method="POST">
+    <input type="email" name="email" placeholder="Email" autofocus autocomplete="username" spellcheck="false">
+    <input type="password" name="password" placeholder="Password" autocomplete="current-password">
+    <button type="submit">Sign in</button>
+  </form>
+  <div class="hint">Forgot your password? This studio can't email you — it has no mail server.
+    Ask your Hermes agent to reset it for you.</div>
+  {% endif %}
 </div>
 </body>
 </html>

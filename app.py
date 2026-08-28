@@ -9,9 +9,9 @@ Rows per shot:
 5. Generated video
 + Feedback section
 
-Auth: single password via session cookie.
+Auth: email + password (AOIO account store) via session cookie.
 """
-import json, os, uuid, shutil
+import json, os, sys, uuid, shutil
 from pathlib import Path
 from datetime import datetime, timezone
 from functools import wraps
@@ -20,8 +20,23 @@ from flask import (
     url_for, send_from_directory, jsonify, abort
 )
 
+# Shared account store (stdlib-only module, so it works in any venv).
+# Looked up in this order: $AOIO_AUTH_DIR, ./accounts next to this file
+# (how the public repo ships it), then /opt/data/aoio-auth.
+def _find_account_store():
+    here = Path(__file__).resolve().parent
+    for cand in (os.environ.get("AOIO_AUTH_DIR"), str(here / "accounts"), "/opt/data/aoio-auth"):
+        if cand and (Path(cand) / "aoio_auth.py").is_file():
+            return cand
+    raise SystemExit("aoio_auth.py not found — set AOIO_AUTH_DIR to the folder holding it")
+
+sys.path.insert(0, _find_account_store())
+import aoio_auth
+
 app = Flask(__name__)
-app.secret_key = os.urandom(32).hex()
+# Stable across restarts when GALLERY_SECRET is set, so a restart does not sign
+# everyone out; random (sessions dropped on restart) when it is not.
+app.secret_key = os.environ.get("GALLERY_SECRET") or os.urandom(32).hex()
 
 # --- Config ---
 BASE_DIR = Path(__file__).parent
@@ -29,7 +44,11 @@ DATA_DIR = BASE_DIR / "data"
 SHOTS_DIR = BASE_DIR / "shots"
 PROJECTS_FILE = DATA_DIR / "projects.json"
 
-GALLERY_PASSWORD = os.environ.get("GALLERY_PASSWORD", "consume2026")
+# Bootstrap-only fallback: used ONLY while no accounts exist yet, so a fresh
+# install is reachable before the first `aoio_auth.py add` runs.
+GALLERY_PASSWORD = os.environ.get("GALLERY_PASSWORD", "")
+# Roles allowed to open the studio.
+GALLERY_ROLES = ("owner", "reviewer")
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 SHOTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -86,12 +105,28 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login_page():
     error = None
+    # Bootstrap mode: no accounts created yet -> accept GALLERY_PASSWORD once so
+    # a fresh install is reachable. Disappears the moment an account exists.
+    bootstrap = aoio_auth.count_users() == 0 and bool(GALLERY_PASSWORD)
     if request.method == "POST":
-        if request.form.get("password") == GALLERY_PASSWORD:
-            session["logged_in"] = True
-            return redirect(url_for("project_list"))
-        error = "Wrong password"
-    return render_template("login.html", error=error)
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        if bootstrap and not email:
+            if password == GALLERY_PASSWORD:
+                session["logged_in"] = True
+                session["email"] = "bootstrap"
+                return redirect(url_for("project_list"))
+            error = "Wrong password"
+        else:
+            user = aoio_auth.verify(email, password, roles=GALLERY_ROLES)
+            if user:
+                session["logged_in"] = True
+                session["email"] = user["email"]
+                session["name"] = user["name"]
+                session["role"] = user["role"]
+                return redirect(url_for("project_list"))
+            error = "Wrong email or password"
+    return render_template("login.html", error=error, bootstrap=bootstrap)
 
 @app.route("/logout")
 def logout():
