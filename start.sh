@@ -7,12 +7,12 @@
 #   python3 accounts/aoio_auth.py passwd you@example.com
 # List accounts:
 #   python3 accounts/aoio_auth.py list
+#
+# FIRST RUN, before any account exists: the app prints a RANDOM one-time setup
+# code to gallery.log — use it to open the page once, then create your account.
+# No password is hardcoded here or in the source, so this public repo gives an
+# attacker nothing: `grep setup- gallery.log` on YOUR server is the only way in.
 cd "$(dirname "$0")"
-
-# Bootstrap-only password: accepted ONLY while zero accounts exist, so a brand
-# new install is reachable before you create your first account. It stops
-# working the moment an account exists. Change it anyway.
-export GALLERY_PASSWORD=change-me-first-run
 
 # Stable session key so restarting the gallery does not sign you out.
 if [ ! -f .secret ]; then
@@ -20,6 +20,10 @@ if [ ! -f .secret ]; then
   chmod 600 .secret
 fi
 export GALLERY_SECRET="$(cat .secret)"
+
+# Set this to 1 once the gallery is reached only over HTTPS (Cloudflare tunnel):
+# it marks the session cookie Secure. Leave unset while testing on 127.0.0.1.
+# export GALLERY_SECURE_COOKIE=1
 
 export GALLERY_PORT=80
 # Use port 8080 instead if port 80 is unavailable on your server.

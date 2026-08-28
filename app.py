@@ -11,7 +11,7 @@ Rows per shot:
 
 Auth: email + password (AOIO account store) via session cookie.
 """
-import json, os, sys, uuid, shutil
+import json, os, sys, uuid, shutil, secrets, time, hmac
 from pathlib import Path
 from datetime import datetime, timezone
 from functools import wraps
@@ -37,6 +37,14 @@ app = Flask(__name__)
 # Stable across restarts when GALLERY_SECRET is set, so a restart does not sign
 # everyone out; random (sessions dropped on restart) when it is not.
 app.secret_key = os.environ.get("GALLERY_SECRET") or os.urandom(32).hex()
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Set GALLERY_SECURE_COOKIE=1 when the gallery is only reached over HTTPS
+    # (e.g. behind a Cloudflare tunnel). Leave it off while testing on
+    # http://127.0.0.1, or the browser will refuse to send the cookie.
+    SESSION_COOKIE_SECURE=os.environ.get("GALLERY_SECURE_COOKIE", "") == "1",
+)
 
 # --- Config ---
 BASE_DIR = Path(__file__).parent
@@ -44,11 +52,47 @@ DATA_DIR = BASE_DIR / "data"
 SHOTS_DIR = BASE_DIR / "shots"
 PROJECTS_FILE = DATA_DIR / "projects.json"
 
-# Bootstrap-only fallback: used ONLY while no accounts exist yet, so a fresh
-# install is reachable before the first `aoio_auth.py add` runs.
-GALLERY_PASSWORD = os.environ.get("GALLERY_PASSWORD", "")
+# First-run setup only. NO password is shipped in this file or in start.sh: while
+# zero accounts exist the app generates a random one-time setup code per start and
+# prints it to its log (gallery.log). Anyone reading this source learns nothing
+# usable. The code stops working the moment an account exists.
+_SETUP_CODE = None
 # Roles allowed to open the studio.
 GALLERY_ROLES = ("owner", "reviewer")
+# Failed-login throttle: attempts per IP per window (seconds).
+LOGIN_MAX_FAILS, LOGIN_WINDOW = 10, 300
+_login_fails = {}
+
+
+def setup_code():
+    """Random one-time setup code, valid only while no account exists."""
+    global _SETUP_CODE
+    if _SETUP_CODE is None:
+        _SETUP_CODE = "setup-" + secrets.token_urlsafe(9)
+        print(f"[gallery] no accounts yet — one-time setup code: {_SETUP_CODE}\n"
+              f"[gallery] create your real login with: "
+              f"python3 aoio_auth.py add you@example.com", flush=True)
+    return _SETUP_CODE
+
+
+def client_ip():
+    """Caller IP for throttling. Only CF-Connecting-IP (set by Cloudflare, not
+    forgeable by the client) is trusted; otherwise the socket address. Never
+    X-Forwarded-For, which any client can send."""
+    return request.headers.get("CF-Connecting-IP") or request.remote_addr or "?"
+
+
+def login_throttled(ip):
+    now = time.time()
+    hits = [t for t in _login_fails.get(ip, []) if now - t < LOGIN_WINDOW]
+    _login_fails[ip] = hits
+    if len(_login_fails) > 5000:          # bound memory against spoofed-IP floods
+        _login_fails.clear()
+    return len(hits) >= LOGIN_MAX_FAILS
+
+
+def login_failed(ip):
+    _login_fails.setdefault(ip, []).append(time.time())
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 SHOTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -105,18 +149,25 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login_page():
     error = None
-    # Bootstrap mode: no accounts created yet -> accept GALLERY_PASSWORD once so
-    # a fresh install is reachable. Disappears the moment an account exists.
-    bootstrap = aoio_auth.count_users() == 0 and bool(GALLERY_PASSWORD)
+    # First-run mode: no accounts yet -> accept the random one-time setup code
+    # printed to gallery.log, so a fresh install is reachable before the first
+    # account is created. Disappears the moment an account exists.
+    bootstrap = aoio_auth.count_users() == 0
     if request.method == "POST":
+        ip = client_ip()
+        if login_throttled(ip):
+            return render_template(
+                "login.html", bootstrap=bootstrap,
+                error="Too many attempts. Try again in a few minutes."), 429
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password") or ""
         if bootstrap and not email:
-            if password == GALLERY_PASSWORD:
+            if hmac.compare_digest(password, setup_code()):
                 session["logged_in"] = True
-                session["email"] = "bootstrap"
+                session["email"] = "setup"
                 return redirect(url_for("project_list"))
-            error = "Wrong password"
+            login_failed(ip)
+            error = "Wrong setup code"
         else:
             user = aoio_auth.verify(email, password, roles=GALLERY_ROLES)
             if user:
@@ -125,7 +176,11 @@ def login_page():
                 session["name"] = user["name"]
                 session["role"] = user["role"]
                 return redirect(url_for("project_list"))
+            login_failed(ip)
+            print(f"[gallery] login REJECTED for {email or '-'} from {ip}", flush=True)
             error = "Wrong email or password"
+    elif bootstrap:
+        setup_code()          # make sure the code is generated + logged
     return render_template("login.html", error=error, bootstrap=bootstrap)
 
 @app.route("/logout")

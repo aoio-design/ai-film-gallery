@@ -91,6 +91,8 @@ def rate_ok(ip: str) -> bool:
     now = time.time()
     hits = [t for t in _attempts.get(ip, []) if now - t < RATE_WINDOW]
     _attempts[ip] = hits
+    if len(_attempts) > 5000:          # bound memory against IP-spread floods
+        _attempts.clear()
     return len(hits) < RATE_LIMIT
 
 
@@ -293,8 +295,12 @@ class Gate(BaseHTTPRequestHandler):
 
     # --- utils ---
     def client_ip(self) -> str:
-        fwd = self.headers.get("CF-Connecting-IP") or self.headers.get("X-Forwarded-For", "")
-        return (fwd.split(",")[0].strip() if fwd else self.client_address[0])
+        """Caller IP for throttling. Only CF-Connecting-IP is trusted (Cloudflare
+        sets it and strips any client-supplied copy); X-Forwarded-For is NOT, since
+        any client can send it and use it to spread brute-force attempts across
+        fake IPs. Falls back to the socket address."""
+        cf = (self.headers.get("CF-Connecting-IP") or "").strip()
+        return cf.split(",")[0].strip() if cf else self.client_address[0]
 
     def is_https(self) -> bool:
         return self.headers.get("X-Forwarded-Proto", "").lower() == "https"

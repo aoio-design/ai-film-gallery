@@ -38,7 +38,7 @@ DB_PATH = Path(os.environ.get("AOIO_AUTH_DB") or (Path(__file__).resolve().paren
 ROLES = ("owner", "reviewer")          # owner = studio + agent, reviewer = studio only
 _SCRYPT_N, _SCRYPT_R, _SCRYPT_P = 2 ** 15, 8, 1
 _DUMMY_HASH = None                     # lazily built, used for constant-work misses
-MIN_PASSWORD_LEN = 8
+MIN_PASSWORD_LEN = 12          # public source: strength must come from the password
 
 
 # --- hashing --------------------------------------------------------------
@@ -313,10 +313,13 @@ def _cli(argv: list[str]) -> int:
             return 0 if ok else 1
 
         if cmd == "verify":
-            if len(rest) < 2:
-                print("usage: verify <email> <password>")
+            # Password may come from $AOIO_PASSWORD instead of argv, so it does not
+            # land in shell history or `ps` output.
+            pw = rest[1] if len(rest) > 1 else os.environ.get("AOIO_PASSWORD", "")
+            if not rest or not pw:
+                print("usage: verify <email> <password>   (or set AOIO_PASSWORD)")
                 return 2
-            u = verify(rest[0], rest[1])
+            u = verify(rest[0], pw)
             print("OK: " + repr(u) if u else "REJECTED")
             return 0 if u else 1
 

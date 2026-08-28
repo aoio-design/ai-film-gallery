@@ -69,10 +69,11 @@ function toggleTheme(){var h=document.documentElement;h.classList.toggle('light'
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
   {% if bootstrap %}
   <form method="POST">
-    <input type="password" name="password" placeholder="Setup password" autofocus autocomplete="current-password">
+    <input type="password" name="password" placeholder="One-time setup code" autofocus autocomplete="off">
     <button type="submit">Enter</button>
   </form>
-  <div class="hint">First-run setup mode. Ask your agent to create your account, then sign in with your email.</div>
+  <div class="hint">First run — no accounts yet. Your one-time setup code was printed to
+    <code>gallery.log</code> on the server. Ask your agent to create your account, then sign in with your email.</div>
   {% else %}
   <form method="POST">
     <input type="email" name="email" placeholder="Email" autofocus autocomplete="username" spellcheck="false">
