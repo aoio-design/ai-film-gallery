@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ project.title }} — CONSUME Gallery</title>
+<title>{{ project.title }} — AI Film Studio</title>
 <style>
 :root {
   --bg:#0a0c12; --bg2:#0e1119; --panel:#131722; --panel2:#171c29;
@@ -250,6 +250,9 @@ body.resizing-h, body.resizing-h * { cursor: row-resize !important; user-select:
   color: var(--text); font-family: var(--sans); line-height: 1.4;
   resize: vertical; min-height: 50px;
 }
+/* Video prompts are long (H3 six-section blocks) — 4x the height so they can be
+   read without scrolling 2.5 lines at a time. Still drag-resizable. */
+.prompt-box.video-prompt { min-height: 200px; height: 200px; }
 .prompt-box:focus { outline: none; border-color: var(--gold); }
 
 /* Media box (image or video) */
@@ -460,7 +463,7 @@ function toggleTheme(){var h=document.documentElement;h.classList.toggle('light'
     <!-- Row 3: Video Prompt -->
     <div class="row">
       <div class="row-label"><span>3</span> Video Prompt</div>
-      <textarea class="prompt-box" data-project="{{ project.id }}" data-shot="{{ shot.id }}" data-field="video_prompt" onchange="autoSave(this)">{{ shot.video_prompt }}</textarea>
+      <textarea class="prompt-box video-prompt" data-project="{{ project.id }}" data-shot="{{ shot.id }}" data-field="video_prompt" onchange="autoSave(this)">{{ shot.video_prompt }}</textarea>
     </div>
 
     <!-- Row 4: Video -->
@@ -499,7 +502,7 @@ function toggleTheme(){var h=document.documentElement;h.classList.toggle('light'
     <!-- Row 4: Video Prompt -->
     <div class="row">
       <div class="row-label"><span>3</span> Video Prompt</div>
-      <textarea class="prompt-box" data-project="{{ project.id }}" data-shot="{{ shot.id }}" data-field="video_prompt" onchange="autoSave(this)">{{ shot.video_prompt }}</textarea>
+      <textarea class="prompt-box video-prompt" data-project="{{ project.id }}" data-shot="{{ shot.id }}" data-field="video_prompt" onchange="autoSave(this)">{{ shot.video_prompt }}</textarea>
     </div>
 
     <!-- Row 5: Video -->
