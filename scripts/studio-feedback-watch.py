@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Gallery feedback watcher — SILENT when nothing new; prints a digest of new feedback.
+"""Studio feedback watcher — SILENT when nothing new; prints a digest of new feedback.
 
 Scans every shot's metadata.json feedback[] plus each project's _episode_script.json
-feedback[] under the gallery's shots/ dir. Only reports entries newer than the last
+feedback[] under the studio's shots/ dir. Only reports entries newer than the last
 run (marker file), with a 60s grace period so in-flight saves aren't double-reported.
 First run records the baseline silently (no spam of historical feedback).
 
-Wire it up: hermes cron create 'every 30m' --name 'Gallery feedback watcher' --no-agent --script gallery-feedback-watch.py
+Wire it up: hermes cron create 'every 30m' --name 'Studio feedback watcher' --no-agent --script studio-feedback-watch.py
 """
 import json
 import os
 from datetime import datetime, timezone
 
-GALLERY = os.environ.get("GALLERY_DIR", "/opt/data/gallery")
+GALLERY = os.environ.get("GALLERY_DIR", "/opt/data/studio")
 STATE = os.path.join(GALLERY, ".feedback-watch-state")
 
 

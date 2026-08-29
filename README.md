@@ -158,14 +158,14 @@ MIT — free to use, modify, and redistribute. Built for the [Agentic AI Film Pr
 
 ## Helper scripts (`scripts/`)
 
-Scheduled-job scripts for keeping your studio alive (see the guide, Chapter 8 "Your automatic crew"):
+Scheduled-job scripts for keeping your studio alive (see the guide, Chapter 5 "Your automatic crew"):
 
-- `gallery-watchdog.sh` — every 5 min; restarts the gallery if it dies
-- `webui-tunnel-health.sh` — every 5 min; restarts the Web UI, the agent login gate, the gallery and the Cloudflare tunnel if any are down
+- `studio-watchdog.sh` — every 5 min; restarts the studio if it dies
+- `webui-tunnel-health.sh` — every 5 min; restarts the Web UI, the agent login gate, the studio and the Cloudflare tunnel if any are down
 - `backup.sh` — weekly; backs up config/skills/pipeline/gallery data to your private GitHub repo
 - `hermes-update-check.sh` — weekly; pings when a newer Hermes build exists (silent when current)
 - `webui-update-check.sh` — weekly; pings when a newer Web UI build exists (silent when current)
 
 Each prints output only when it acted (empty stdout = healthy = silent), so they work as `no_agent` cron scripts.
 
-- `gallery-feedback-watch.py` — every 30 min; silent, prints a digest when new shot/script feedback arrives (first run baselines silently)
+- `studio-feedback-watch.py` — every 30 min; silent, prints a digest when new shot/script feedback arrives (first run baselines silently)

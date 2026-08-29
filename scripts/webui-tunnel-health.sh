@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # WebUI + Cloudflare tunnel watchdog.
 # Silent when healthy (empty stdout = no delivery). Prints a one-liner only when it restarted something.
+# Overrides: GALLERY_DIR (default /opt/data/studio) and TUNNEL_NAME (default: read from
+# ~/.cloudflared/config.yml, falling back to ai-film-gallery).
 OUT=""
 
 # 1. WebUI on 8787
@@ -24,15 +26,19 @@ fi
 # keep /tmp symlink for scripts that still reference /tmp/cloudflared
 ln -sf "$CF" /tmp/cloudflared
 
-# 3. Tunnel for consume-gallery (serves .cloud + .com hostnames)
-if ! pgrep -f "cloudflared tunnel run consume-gallery" >/dev/null; then
-  nohup "$CF" tunnel run consume-gallery \
+# 3. Cloudflare tunnel. The tunnel name comes from the buyer's own config
+#    (~/.cloudflared/config.yml, first "tunnel:" line) so any name works;
+#    fall back to $TUNNEL_NAME, then ai-film-gallery.
+TUNNEL_NAME="${TUNNEL_NAME:-$(grep -m1 '^tunnel:' ~/.cloudflared/config.yml 2>/dev/null | awk '{print $2}')}"
+TUNNEL_NAME="${TUNNEL_NAME:-ai-film-gallery}"
+if ! pgrep -f "cloudflared tunnel run $TUNNEL_NAME" >/dev/null; then
+  nohup "$CF" tunnel run "$TUNNEL_NAME" \
     >> /opt/data/logs/cloudflared.log 2>&1 </dev/null &
   OUT="$OUT restarted tunnel"
 fi
 
-# 4. Coming-soon static page on 9000 (apex aoiostudios.com)
-if ! curl -sf --max-time 5 http://127.0.0.1:9000/ >/dev/null 2>&1; then
+# 4. Coming-soon static page on 9000 (apex domain only — skipped when not installed)
+if [ -d /opt/data/coming-soon ] && ! curl -sf --max-time 5 http://127.0.0.1:9000/ >/dev/null 2>&1; then
   nohup python3 -m http.server 9000 --directory /opt/data/coming-soon \
     >> /opt/data/logs/coming-soon.log 2>&1 &
   OUT="$OUT restarted coming-soon"
@@ -46,10 +52,11 @@ if ! curl -sf --max-time 5 http://127.0.0.1:8790/health >/dev/null 2>&1; then
   OUT="$OUT restarted agent gate"
 fi
 
-# 6. AI Film Studio gallery on 80 (own email + password login)
+# 6. AI Film Studio on 80 (own email + password login)
+GALLERY_DIR="${GALLERY_DIR:-/opt/data/studio}"
 if ! curl -sf --max-time 5 http://127.0.0.1:80/login >/dev/null 2>&1; then
-  (cd /opt/data/gallery && nohup bash start.sh >> /opt/data/logs/gallery-restart.log 2>&1 &)
-  OUT="$OUT restarted gallery"
+  (cd "$GALLERY_DIR" && nohup bash start.sh >> /opt/data/logs/gallery-restart.log 2>&1 &)
+  OUT="$OUT restarted studio"
 fi
 
 if [ -n "$OUT" ]; then
