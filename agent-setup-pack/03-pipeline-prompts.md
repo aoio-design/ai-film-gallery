@@ -4,6 +4,12 @@
 your own details. Use these with your agent in chat, or in the gallery review
 loop (see studio-ops skill).*
 
+> **House rule that applies to every prompt here:** if an instruction is
+> ambiguous — which assets are meant, whether "finished reviewing" means
+> "approved, go ahead", which step "generate" refers to — ask the user what
+> they mean and WAIT before taking any action. Never guess, never pick a
+> reasonable default.
+
 ---
 
 ## 1. Screenwriter prompt
@@ -33,17 +39,26 @@ loop (see studio-ops skill).*
 
 ## 3. Character sheet prompt
 
-> Generate a character sheet for [NAME] — [age], [occupation], [2-3 style
-> details: clothing/hair]. Several poses, SAME face in every pose, NO grid
-> lines, NO borders, PURE WHITE BACKGROUND. Top row: four full-body views
-> (facing camera, left profile, right profile, back). Bottom row: three
-> close-up portraits (facing camera, left profile, right profile).
+> Generate a full body character reference turnaround sheet of [NAME] —
+> [age], [occupation], [2-3 style details: clothing/hair], featuring four
+> distinct views arranged side-by-side on a single wide frame: far left
+> close-up facial portrait, followed by full-body side profile, full-body
+> rear view, and full-body front view. The character has [hair detail],
+> wearing [outfit detail]. Unedited RAW studio photography, shot on
+> Hasselblad H6D-100c, 85mm lens, f/8 aperture, soft diffuse high-key
+> lighting, authentic skin texture with visible pores, isolated on a
+> seamless pure white background.
 
 ## 4. Location image prompt
 
-> Generate a 16:9 wide shot of [LOCATION] at [time of day], [style: e.g.
-> moody, cinematic, documentary]. No people in frame. Detailed description:
-> [what's in the room/street, key props, lighting, color palette].
+> Generate a 4-panel location reference sheet arranged in a 2x2 grid layout
+> of [LOCATION] — [setting, style, mood]. Four distinct environmental views
+> on a single wide frame: top-left wide eye-level view, top-right high-angle
+> perspective, bottom-left close-up detail view, bottom-right reverse/low-angle
+> view. The scene features [key architecture, props, materials, lighting,
+> weather]. No people in frame. Unedited RAW architectural photography, shot
+> on Hasselblad H6D-100c, 24mm tilt-shift lens, f/8 aperture, soft diffuse
+> overcast lighting, authentic surface textures, edge-to-edge frame sharpness.
 
 ## 5. Keyframe image prompt
 
@@ -75,6 +90,10 @@ loop (see studio-ops skill).*
 > WhatsApp and ask either "shall I generate the [N] shots now? it'll cost
 > about US$X" or "which shots should I regenerate?", and follow my answer.
 >
+> If a note is ambiguous — it could mean approve-and-proceed, or only some
+> assets, or a later step — ask me what I mean first, then act. Never guess
+> what a note is asking for.
+>
 > Report back a list of what you changed, what is waiting on approval, and
 > what each batch cost.
 
@@ -84,9 +103,12 @@ loop (see studio-ops skill).*
 > season and episode in projects.json (format "director"), write the episode
 > script into the script pane, create one shot card per shot with its
 > description and video prompt, and create the character/location/prop entries
-> on the assets page for everything this episode needs. Words only — generate
-> nothing yet. Then tell me which pages to review:
-> /projects, /s/<season>, /a/<season>, /p/<episode>.
+> on the assets page for everything this episode needs — the character bible
+> (looks, wardrobe, voice notes) and set/prop descriptions. Words only —
+> generate nothing yet. Then tell me: "The character bible and assets are
+> ready for your review at /a/<season> — nothing is generated until you
+> approve them." Do not offer keyframes, video prompts or clips before I
+> approve both the script and the bible.
 
 ## 8. Daily pipeline prompt (optional)
 

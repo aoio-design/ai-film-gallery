@@ -211,20 +211,96 @@ per image, ~US$0.40 per 5-second clip, ~US$0.14 per 4K upscale).
   low. Report what each batch actually cost when it finishes.
 - Never generate before the script and drafts are approved — words cost
   nothing, media costs money.
+- **CLARIFY FIRST — ambiguous feedback = ask, then wait.** If a note or
+  instruction could mean more than one thing — which assets are meant,
+  whether "finished reviewing" means "approved, go ahead", which step
+  "generate" refers to — message the owner and ask what they mean BEFORE
+  acting. Never guess, never pick a reasonable default. (Owner's house rule,
+  applies to every prompt in the pack.)
 
-## Feedback watcher (optional but recommended)
+## Feedback watcher (recommended — acts on feedback automatically)
 
-`studio-feedback-watch.py` scans every shot's `metadata.json` feedback[]
-plus each project's `_episode_script.json` feedback[], and reports ONLY
-entries newer than the last run (marker file, 60s grace). Silent when nothing
-new. Wire it up as a scheduled job every 30 minutes:
+`studio-feedback-watch.py` scans EVERY studio feedback location: shot
+`metadata.json`, episode `_episode_script.json`, asset (Character Bible)
+`metadata.json`, and the studio-wide `_studio_feedback.json` list. It reports
+ONLY entries newer than the last run (marker file, 60s grace). Silent when
+nothing new.
 
+Wire it up as an **agent-mode cron with monitor_script** (not no_agent) so
+your agent receives the feedback, ACTS on it, and **replies back in the
+Studio's Talk-to-your-agent drawer**:
+
+```text
+hermes cron create 'every 5m' --name 'Studio feedback watcher' --deliver local \
+  --monitor-script studio-feedback-watch.py \
+  --prompt 'New feedback appeared in the Studio (via the Talk-to-your-agent drawer). Open each reported file, read every feedback entry in full, and act on it: revise the referenced script lines, shots, or asset prompts (text edits cost nothing). Then append a reply to /opt/data/studio/shots/_agent_replies.json as [{"timestamp": "...", "project": "<project id from the file path, or null>", "text": "what you changed"}] so the owner sees it in the drawer. Preserve existing records. Paid-generation rule: assets/video are generated through paid fal.ai APIs — never fire a generation without asking the owner first. Report concisely what you changed.'
 ```
-hermes cron create 'every 30m' --name 'Studio feedback watcher' --no-agent --script studio-feedback-watch.py
-```
 
-First run records the baseline silently. This closes the loop: owner leaves
-feedback → watcher pings → agent reads the files and acts.
+> ⚠️ **Deliver this job to `local` ONLY.** The agent's reply appears in the
+> studio drawer, so it must NOT also blast a Telegram/WhatsApp channel every
+> time the owner sends feedback (that would spam them on every note). Keep the
+> OTHER scheduled jobs (health checks, backup, update checks) delivering to a
+> channel so the owner is only pinged when something actually needs attention.
+
+This closes the loop: you leave feedback → watcher detects it (checks shots,
+the episode script, your Character Bible assets, and your general studio
+notes every 5 minutes) → your agent applies the changes and TELLS YOU what it
+did in the drawer. If paid fal.ai generation is needed, the agent asks you
+before spending money.
+
+## "Talk to your agent" — how the loop works (and how to fix it)
+
+The **Talk to your agent** button (bottom-right FAB) on every studio page sends
+the owner's note to your own agent, and shows the agent's reply back in the
+drawer. Any page with the FAB (episode `/p/…`, Character Bible `/a/…`) uses the
+same loop — there is only one copy of the wiring, driven by files on disk.
+
+**The loop, end to end:**
+
+1. Owner types a note in the drawer and sends it → saved to a JSON file under
+   `shots/` or `assets/` (episode notes → `shots/<project>/_episode_script.json`,
+   shot notes → `shots/<project>/<id>/metadata.json`, Character Bible notes →
+   `assets/<project>/<asset>/metadata.json`, general notes →
+   `shots/_studio_feedback.json`).
+2. The **Studio feedback watcher** cron (every 5 min) scans all of those
+   locations via `studio-feedback-watch.py`. Only when a *new* note appears
+   does it wake you (the agent), so it costs nothing while idle.
+3. You read the note, **edit the text** (script line, prompt, character
+   description — free, just do it), then **append a reply** to
+   `shots/_agent_replies.json`:
+   `[{"timestamp":"…","project":"<project id or null>","text":"what you changed"}]`.
+   Keep any existing records — do NOT wipe the file.
+4. The drawer polls `/agent_replies` every 8 seconds *while open* and shows
+   your reply as a light-blue message. No page reload needed.
+5. If the owner's request needs **paid fal.ai generation** (images, clips,
+   upscaling), do NOT fire it. Ask the owner: *"«what's ready» — shall I
+   generate it now?"* and wait.
+
+**Design notes live in the studio code:** `docs/FAB-DESIGN.md` (in the studio
+app folder) documents the full design, the reuse recipe, and the known
+gotchas — read it before changing the FAB/drawer.
+
+**If the owner says "I sent feedback but you didn't reply":** work through these
+in order:
+
+1. **Is the watcher cron running?** Ask the owner or run
+   `hermes cron list` — confirm the *Studio feedback watcher* job exists and is
+   `every 5m` with `--monitor-script studio-feedback-watch.py` AND **`deliver: local`**
+   (it must NOT deliver to a channel, or the owner gets a message every time they
+   send feedback). If missing, recreate it (command above) — this is the usual
+   cause: an *agent-mode monitor* cron, NOT a `--no-agent` script job.
+2. **Did the note land where the watcher looks?** Check the file listed by the
+   note's target. All four locations are scanned — shots, episode script,
+   Character Bible assets, and the general inbox. If you found the note on disk
+   but the watcher never reported it, the marker file (`shots/.feedback-watch-state`)
+   may have been advanced past it by a manual run — advance it back to ≥60s
+   *before* the note's timestamp, then re-run the cron.
+3. **Was your reply written?** Confirm `shots/_agent_replies.json` has the new
+   record and is valid JSON (preserve prior records). The drawer won't show a
+   reply that isn't in that file.
+4. **Is the owner looking at the right page?** Replies are filtered by project;
+   a reply written with `project: null` shows on every page, one with a project
+   id shows only on that project's pages. Match the project id.
 
 ## Troubleshooting
 

@@ -49,8 +49,9 @@ step yourself whenever the customer starts describing a new film.*
 >
 > 1. Ask me for the basics: title, genre, logline, characters, locations,
 >    and episode count if it's a series.
-> 2. Set up a project folder for it and create a character bible + location
->    bible from my description.
+> 2. Set up a project folder for it and draft a character bible + location
+>    bible from my description (working notes — the studio bible is written
+>    after the script is approved).
 > 3. Keep a memory entry for every fact you learn about this project.
 >
 > This happens as part of our normal conversation — I never have to remember
@@ -64,13 +65,17 @@ step yourself whenever the customer starts describing a new film.*
 >    Nothing is created yet. (This is also when you learn the project — see
 >    step 4 above.)
 > 2. **Write it up** — when I say go, write the script, break it into 3–6
->    second shots, build the character/location/prop bible, then populate my
->    studio: the project/season, the assets page, the episode cards and every
->    shot card, with the episode script in the script pane. Words only — no
->    image, audio or video generation at this stage.
-> 3. **Draft review** — I leave feedback on the assets page (characters, sets,
->    props) and on the episode page (script pane and per-shot boxes). Read only
->    the notes newer than your last revision, amend the drafts, re-upload, and
+>    second shots, and populate my studio: the project/season, the episode
+>    cards and every shot card, with the episode script in the script pane.
+>    Words only — no image, audio or video generation at this stage. Then
+>    STOP and tell me the script is ready for review. Do not build the
+>    character bible, and do not offer keyframes, video prompts or clips,
+>    until I have approved the script.
+> 3. **Draft review, two rounds** — First the script: I review the episode
+>    page (script pane and per-shot boxes) and we loop until I approve it.
+>    THEN you build the character/location/prop bible and populate the assets
+>    page (words only) and I review that in a second round. Read only the
+>    notes newer than your last revision, amend the drafts, re-upload, and
 >    tell me what changed. Repeat until I approve the words.
 > 4. **Reference images** — after I approve the words AND approve the cost:
 >    generate the character sheets, key props and location scenes through my
@@ -108,6 +113,14 @@ step yourself whenever the customer starts describing a new film.*
 
 ## House rules (follow these on every project)
 
+0. **If an instruction is ambiguous, ask before acting.** In chat or in the
+   gallery review loop, if I say something that could mean more than one thing —
+   which assets I mean, whether "finished reviewing" means "approved, go
+   ahead", or which step "generate" refers to — ask me what I mean and WAIT
+   for my answer. Never guess, never pick a reasonable default. A clarifying
+   question is the right action even when it feels like progress would be
+   faster. (This also applies to instructions that seem to contradict what we
+   agreed earlier — check with me first.)
 1. Character consistency is sacred — always reference the approved
    character sheet images and use @tags in image prompts.
 2. One speaker per video clip; dialogue lines ≤ 5 seconds per clip, written
