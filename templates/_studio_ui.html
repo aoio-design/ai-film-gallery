@@ -1,0 +1,134 @@
+<!-- ============ Studio shared UI partial ============
+   Contains the focus-mode edge bars/Reset chip, the "Talk to your agent"
+   FAB + drawer, the lightbox, and the toast, plus the agent-reply poller.
+   FULL DESIGN NOTES (how the FAB → cron → reply loop works, how to reuse on a
+   new page, gotchas): see docs/FAB-DESIGN.md in this repo.
+   ==================================================== -->
+<!-- ============ Edge bars (focus mode) ============ -->
+<div class="edge-bar bar-script left" onclick="studioFocus('script')" title="Expand Episode Script">
+  <button class="icon-btn plus" onclick="event.stopPropagation();studioFocus('script')">+</button>
+  <span class="bar-label vlabel">Episode Script</span>
+</div>
+<div class="edge-bar bar-preview right" onclick="studioFocus('preview')" title="Expand Video Preview">
+  <button class="icon-btn plus" onclick="event.stopPropagation();studioFocus('preview')">+</button>
+  <span class="bar-label vlabel">Video Preview</span>
+</div>
+<div class="edge-bar bar-shots bottom" onclick="studioFocus('shots')" title="Expand Shot List">
+  <span class="bar-label">Shot List</span>
+  <button class="icon-btn plus" onclick="event.stopPropagation();studioFocus('shots')">+</button>
+</div>
+
+<!-- ============ Floating "show all sections" reset (visible only in focus mode) ============ -->
+<button id="resetChip" onclick="studioResetFocus()" title="Show all sections again">
+  <span style="font-weight:700">−</span> Show all sections
+</button>
+
+<!-- ============ FAB: Talk to your agent ============ -->
+<button class="fab" onclick="toggleDrawer(true)" title="Talk to your agent">
+  <span class="fab-dot"></span>
+  <span class="fab-label">Talk to your agent</span>
+  <span class="fab-icon" aria-hidden="true">💬</span>
+</button>
+
+<!-- ============ Agent drawer ============ -->
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleDrawer(false)"></div>
+<aside class="drawer" id="agentDrawer" aria-label="Talk to your agent">
+  <div class="drawer-head">
+    <div style="flex:1">
+      <div class="drawer-title">💬 Talk to your agent</div>
+      <div class="drawer-sub">Feedback lands with your agent automatically</div>
+    </div>
+    <button class="icon-btn minus" title="Close" onclick="toggleDrawer(false)">−</button>
+  </div>
+  <div class="drawer-msgs" id="agentMsgs">
+    <div class="msg sys">Tell your agent what to change. Mention it like "In the script, lines 13-15…" — context is attached automatically.</div>
+  </div>
+  <div class="drawer-foot">
+    <span class="ctx-chip" id="agentChip" style="display:none" title="Clear context — send as general feedback">
+      <span id="agentChipText"></span><span class="x">✕</span>
+    </span>
+    <div class="drawer-row">
+      <textarea class="drawer-ta" id="agentTa" rows="1" placeholder="e.g. Ep1-04: her line feels flat — make her more wary"></textarea>
+      <button class="drawer-send" id="agentSend" onclick="sendAgentFeedback()" title="Send">➤</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ Lightbox ============ -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">×</button>
+  <img id="lightbox-img" alt="">
+  <div class="lightbox-zoom" onclick="event.stopPropagation()">
+    <button class="zoom-btn" id="zoomOut" title="Zoom out" onclick="lightboxZoom(-25)">−</button>
+    <input type="range" id="zoomRange" min="50" max="300" step="25" value="100" oninput="lightboxZoomTo(this.value)">
+    <button class="zoom-btn" id="zoomIn" title="Zoom in" onclick="lightboxZoom(25)">+</button>
+    <span class="zoom-pct" id="zoomPct">100%</span>
+  </div>
+</div>
+
+<!-- ============ Toast ============ -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* Wire the context chip to clear context */
+document.addEventListener('DOMContentLoaded', function () {
+  var chip = document.getElementById('agentChip');
+  if (chip) chip.addEventListener('click', clearAgentContext);
+});
+
+/* ---------- Agent replies: poll the background watcher's replies and show them ----------
+   The feedback watcher (agent-mode cron) writes its actions/replies to
+   _agent_replies.json; this polls /agent_replies and surfaces new replies as
+   plain messages in the drawer. Replies are tagged with a project; we only show
+   replies for the CURRENT project (or general replies with no project). */
+(function () {
+  var SEEN = {};
+  function projectId() {
+    try {
+      if (window.studioProject) return window.studioProject;
+      var s = sessionStorage.getItem('studio-project');
+      return s || '';
+    } catch (e) { return ''; }
+  }
+  function pollReplies() {
+    var proj = projectId();
+    fetch('/agent_replies' + (proj ? '?project=' + encodeURIComponent(proj) : ''))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.replies || !d.replies.length) return;
+        d.replies.forEach(function (reply) {
+          var key = (reply.timestamp || '') + '|' + (reply.text || '').slice(0, 40);
+          if (SEEN[key]) return;
+          SEEN[key] = true;
+          // Only show agent replies in the open drawer window context; append as
+          // a left-aligned message so they read like the agent talking back.
+          agentMsg('agent', (reply.text || '').trim());
+        });
+      })
+      .catch(function () {});
+  }
+  // Poll while the drawer is open: every 8s, plus immediately on open.
+  var timer = null;
+  function onDrawerChange() {
+    var d = document.getElementById('agentDrawer');
+    var open = d && d.classList.contains('open');
+    if (open) {
+      pollReplies();
+      if (!timer) timer = setInterval(pollReplies, 8000);
+    } else {
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+  }
+  var origToggle = window.toggleDrawer;
+  window.toggleDrawer = function (open) {
+    if (origToggle) origToggle(open);
+    setTimeout(onDrawerChange, 60);
+  };
+  // Watch the drawer element itself for the 'open' class
+  var drawer = document.getElementById('agentDrawer');
+  if (drawer) {
+    new MutationObserver(onDrawerChange).observe(drawer, { attributes: true, attributeFilter: ['class'] });
+  }
+  document.addEventListener('DOMContentLoaded', onDrawerChange);
+})();
+</script>

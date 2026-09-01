@@ -22,6 +22,12 @@ by the owner in their video editor.
 
 ## The pipeline (follow this order)
 
+> **Which model runs which stage is decided by the model registry, not by the
+> prose below.** Read `references/model-registry.yaml` + `references/model-routing.md`
+> before any generation. The stack below is the current global default; if the
+> owner selects an alternative for a step (shot / project / global), follow the
+> mapping protocol and append, don't override.
+
 ```
 1. IDEA        →  talk it through with the owner; nothing is created yet
 2. SCRIPT      →  write it, break it into 3–6 second shots (see
@@ -29,11 +35,11 @@ by the owner in their video editor.
 3. WORDS OK    →  two gates, in order: owner approves the SCRIPT first, then
                   you write the character bible + asset text and they approve
                   that (no generation, no cost)
-4. IMAGES      →  reference images on fal.ai: character sheets and
-                  locations (FLUX 1.1 pro ultra, $0.06 each)
-5. KEYFRAMES   →  first frame per shot (FLUX 2 pro edit: character sheet
-                  + location → the frozen moment, mouth closed/neutral on
-                  dialogue shots)
+4. IMAGES      →  reference images on fal.ai: character sheets + locations/props
+                  (openai/gpt-image-2; characters high ~$0.17, locations/props
+                  medium ~$0.04)
+5. KEYFRAMES   →  first frame per shot (openai/gpt-image-2/edit: upload
+                  character sheet + location refs, compose the frozen moment)
 6. CLIPS       →  one clip per shot (MiniMax H3 Max: keyframe + motion
                   prompt; dialogue in quotes in the prompt — the model
                   speaks it and syncs the lips)

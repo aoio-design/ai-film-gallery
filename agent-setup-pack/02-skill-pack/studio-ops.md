@@ -195,10 +195,11 @@ create it all. The loop:
 
 ## fal.ai key and spending rule (MANDATORY — never break this)
 
-All generation runs through the owner's **fal.ai** account — the key is
-stored as `FAL_KEY` in the Hermes app's Keys page (see the `fal-ai-ops`
-skill) — and every successful output costs the owner money (roughly US$0.06
-per image, ~US$0.40 per 5-second clip, ~US$0.14 per 4K upscale).
+> All generation runs through the owner's **fal.ai** account — the key is
+> stored as `FAL_KEY` in the Hermes app's Keys page (see the `fal-ai-ops`
+> skill) — and every successful output costs the owner money (roughly US$0.17
+> per character sheet at high quality, US$0.04 per location or prop at medium,
+> US$0.05 per keyframe, ~US$0.40 per 5-second clip, ~US$0.14 per 4K upscale).
 
 - **Never** start a paid batch, assume one was approved, or silently wait.
 - The moment you receive feedback (from the gallery, the watcher, or chat)
@@ -233,20 +234,21 @@ Studio's Talk-to-your-agent drawer**:
 ```text
 hermes cron create 'every 5m' --name 'Studio feedback watcher' --deliver local \
   --monitor-script studio-feedback-watch.py \
-  --prompt 'New feedback appeared in the Studio (via the Talk-to-your-agent drawer). Open each reported file, read every feedback entry in full, and act on it: revise the referenced script lines, shots, or asset prompts (text edits cost nothing). Then append a reply to /opt/data/studio/shots/_agent_replies.json as [{"timestamp": "...", "project": "<project id from the file path, or null>", "text": "what you changed"}] so the owner sees it in the drawer. Preserve existing records. Paid-generation rule: assets/video are generated through paid fal.ai APIs — never fire a generation without asking the owner first. Report concisely what you changed.'
+  --prompt 'New feedback appeared in the Studio (via the Talk-to-your-agent drawer). Open each reported file, read every feedback entry in full, and act on it: revise the referenced script lines, shots, or asset prompts (text edits cost nothing). Then append a reply to /opt/data/studio/shots/_agent_replies.json as [{"timestamp": "...", "project": "<project id from the file path, or null>", "text": "what you changed"}] so the owner sees it in the drawer. Preserve existing records.
+GENERATION / PAID WORK: this cron session has NO paid key and must NEVER attempt generation (no images, clips, upscaling). When the owner asks to generate: (1) look up and state the fal.ai cost, (2) do NOT generate — tell the owner to go back to the WebUI/Telegram/WhatsApp to run it with their paid session, and (3) if they forgot the flow, point them back to their live chat to trigger it. Report concisely what you changed.'
 ```
 
-> ⚠️ **Deliver this job to `local` ONLY.** The agent's reply appears in the
-> studio drawer, so it must NOT also blast a Telegram/WhatsApp channel every
-> time the owner sends feedback (that would spam them on every note). Keep the
-> OTHER scheduled jobs (health checks, backup, update checks) delivering to a
-> channel so the owner is only pinged when something actually needs attention.
+> ⚠️ **Two hard rules for this job:**
+> 1. **`--deliver local` ONLY.** The agent's reply appears in the studio drawer, so it must NOT also blast a Telegram/WhatsApp channel every time the owner sends feedback (that would spam them on every note). Keep the OTHER scheduled jobs (health checks, backup, update checks) delivering to a channel so the owner is only pinged when something actually needs attention.
+> 2. **Never generate from this cron.** The background job has no paid key. Paid generation (images, clips, upscaling via fal.ai) must be run by the owner in their live WebUI/Telegram/WhatsApp session. The agent's job is to report the cost and redirect the owner there — never attempt generation itself.
 
 This closes the loop: you leave feedback → watcher detects it (checks shots,
 the episode script, your Character Bible assets, and your general studio
-notes every 5 minutes) → your agent applies the changes and TELLS YOU what it
-did in the drawer. If paid fal.ai generation is needed, the agent asks you
-before spending money.
+notes every 5 minutes) → your agent applies text changes and TELLS YOU what it
+did in the drawer. If paid fal.ai generation is needed, the agent reports the
+estimated cost and points you back to your live WebUI/Telegram/WhatsApp
+session to run it — so money is only ever spent in a session you are present
+in and have approved.
 
 ## "Talk to your agent" — how the loop works (and how to fix it)
 
@@ -273,8 +275,12 @@ same loop — there is only one copy of the wiring, driven by files on disk.
 4. The drawer polls `/agent_replies` every 8 seconds *while open* and shows
    your reply as a light-blue message. No page reload needed.
 5. If the owner's request needs **paid fal.ai generation** (images, clips,
-   upscaling), do NOT fire it. Ask the owner: *"«what's ready» — shall I
-   generate it now?"* and wait.
+   upscaling), do NOT fire it and do NOT try from the cron. Look up and state
+   the **estimated cost**, then tell the owner to **go back to their live
+   WebUI/Telegram/WhatsApp session** to run it there (the paid key lives in
+   that interactive session). If the owner seems to have forgotten the flow
+   and asks you to "kick off" generation, point them back to their live chat
+   to trigger it — never attempt generation from the cron.
 
 **Design notes live in the studio code:** `docs/FAB-DESIGN.md` (in the studio
 app folder) documents the full design, the reuse recipe, and the known

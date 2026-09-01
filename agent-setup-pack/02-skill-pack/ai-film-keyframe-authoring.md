@@ -46,11 +46,16 @@ light spilling from the counter, soft film grain. Mouth closed/neutral.
 
 ## Keyframe rules (never break these)
 
-1. **First frame ONLY** — never a first+last pair. The video model moves
-   forward from this one image.
-2. **The moment BEFORE the action** — if the image already shows the action,
-   the video model gets confused and "un-does" it. The action belongs in the
-   video prompt, not the image.
+1. **First frame by default — an opening+closing pair ONLY if the selected
+   video model requires it.** The keyframe is the starting picture the video
+   model moves from. Read the video binding in
+   `references/model-registry.yaml` before choosing — H3 Max (default) uses a
+   single first frame; a model that needs a first+last pair changes this rule.
+   If the user picks an alternative video model, follow the mapping protocol in
+   `references/model-routing.md` and re-derive the frame count/size from it.
+2. If the image already shows the action, the video model gets confused and
+   "un-does" it. The moment BEFORE the action — not the action itself. The
+   action belongs in the video prompt, not the image.
 3. **Mouth closed/neutral for dialogue shots** — the video model lip-syncs
    from the audio it generates; an open mouth in the reference fights it.
 4. **Same @tags everywhere = same face everywhere.** Never describe the

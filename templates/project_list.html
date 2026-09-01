@@ -3,86 +3,82 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Projects Gallery</title>
+<title>AI Film Studio</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=7">
 <style>
-:root {
-  --bg:#0a0c12; --bg2:#0e1119; --panel:#131722; --panel2:#171c29;
-  --line:#242b3d; --text:#e8ebf2; --mut:#96a0b4;
-  --gold:#c9a86a; --gold-hi:#ddc089; --gold-dim:rgba(201,168,106,.12);
-  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
-  --serif:Georgia,'Times New Roman',serif;
+.nav {
+  position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; gap:16px;
+  padding:10px 24px; background:var(--panel);
+  border-bottom:1px solid var(--line);
 }
-/* light mode (same as Guide site) */
-html.light {
-  --bg:#f4f3ef; --bg2:#fbfaf7; --panel:#ffffff; --panel2:#f0eee7;
-  --line:#ded9cc; --text:#232a3a; --mut:#6b7280;
-  --gold:#a67c2e; --gold-hi:#8f6a22; --gold-dim:rgba(166,124,46,.12);
+.nav .spacer { flex:1; }
+.nav .sep { color:var(--line); }
+.nav .app-name { font-size:14px; font-weight:600; color:var(--mut); }
+.logout { color:var(--mut); font-size:13px; text-decoration:none; }
+.logout:hover { color:var(--red); }
+.wrap { max-width:760px; margin:0 auto; padding:44px 24px 90px; }
+h1 { font-size:26px; font-weight:800; letter-spacing:-.022em; margin-bottom:6px; }
+.lead { color:var(--mut); font-size:14px; margin-bottom:30px; }
+.grid { display:grid; gap:14px; }
+
+/* Card: padding lives on the card itself (never on a parent-only selector) */
+.tile {
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--r-lg); box-shadow:var(--shadow-sm);
+  padding:22px 24px;
+  transition:transform .18s ease, box-shadow .18s, border-color .18s;
 }
-#theme-toggle { position:fixed; top:14px; right:18px; z-index:120; cursor:pointer;
-  font-size:17px; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
-  background:var(--panel); border:1px solid var(--line); border-radius:50%;
-  box-shadow:0 6px 18px rgba(0,0,0,.25); user-select:none; }
-#theme-toggle:hover { border-color:var(--gold); }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: var(--sans);
-  background: var(--bg);
-  color: var(--text);
-  padding: 40px 24px;
-}
-.container { max-width: 800px; margin: 0 auto; }
-h1 { font-family: var(--serif); font-size: 28px; margin-bottom: 8px; color: var(--text); }
-h1 span { color: var(--gold); }
-.subtitle { color: var(--mut); margin-bottom: 32px; font-size: 14px; }
-a { color: var(--gold); text-decoration: none; }
-a:hover { color: var(--gold-hi); text-decoration: underline; }
-.project-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 24px;
-  margin-bottom: 16px;
-  transition: border-color .2s;
-}
-.project-card:hover { border-color: var(--gold); background: var(--gold-dim); }
-.project-card h2 { font-size: 18px; margin-bottom: 6px; color: var(--text); }
-.project-card .meta { color: var(--mut); font-size: 13px; }
-.project-card .links { margin-top: 12px; display: flex; gap: 16px; font-size: 13px; }
-.logout { float: right; color: var(--mut); font-size: 13px; }
-.logout:hover { color: var(--gold); }
+.tile:hover { transform:scale(1.008); box-shadow:var(--shadow); border-color:var(--blue); }
+.tile h2 { font-size:17px; font-weight:700; letter-spacing:-.01em; margin:0 0 4px; }
+.tile h2 a { color:var(--text); text-decoration:none; }
+.tile h2 a:hover { color:var(--blue); }
+.tile .meta { color:var(--mut); font-size:13px; }
+
+/* 9b: two clear buttons on one line */
+.tile-actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+.tile-actions .pill { font-size:13px; padding:8px 16px; text-decoration:none; display:inline-flex; align-items:center; }
+
+.empty-note { color:var(--mut); text-align:center; padding:50px 0; }
 </style>
 </head>
 <body>
-<div id="theme-toggle" onclick="toggleTheme()" title="Toggle light / dark mode">🌙</div>
-<script>
-(function(){var t=localStorage.getItem('aio-theme');if(t==='light'){document.documentElement.classList.add('light');var b=document.getElementById('theme-toggle');if(b)b.textContent='☀️'}})();
-function toggleTheme(){var h=document.documentElement;h.classList.toggle('light');var l=h.classList.contains('light');localStorage.setItem('aio-theme',l?'light':'dark');document.getElementById('theme-toggle').textContent=l?'☀️':'🌙'}
-</script>
-<div class="container">
-  <a href="/logout" class="logout">Logout</a>
-  <h1>Projects <span>Gallery</span></h1>
-  <p class="subtitle">AI film production — shot-by-shot gallery</p>
-  {% if not projects and not seasons %}
-    <p>No projects yet.</p>
-  {% endif %}
-  {% for s in seasons %}
-  <div class="project-card">
-    <h2>{{ s.title }}</h2>
-    <div class="meta">{{ s.episode_count }} episodes</div>
-    <div class="links">
-      <a href="/s/{{ s.id }}">Open season →</a>
-      <a href="/a/{{ s.id }}">Character Bible &amp; Assets →</a>
-    </div>
-  </div>
-  {% endfor %}
-  {% for p in projects %}
-  <a href="/p/{{ p.id }}">
-    <div class="project-card">
-      <h2>{{ p.title }}</h2>
+<nav class="nav">
+  <a class="brand" href="/projects" title="AI Film Studio">AI Film Studio</a>
+  <span class="sep">|</span>
+  <span class="app-name">AI Film Studio</span>
+  <span class="spacer"></span>
+  <a href="/logout" class="logout">Log out</a>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle appearance">🌙</button>
+</nav>
+<div class="wrap">
+  <h1>Your productions</h1>
+  <p class="lead">Every season and episode, shot by shot.</p>
+  <div class="grid">
+    {% for s in seasons %}
+    <section class="tile">
+      <h2><a href="/s/{{ s.id }}">{{ s.title }}</a></h2>
+      <div class="meta">{{ s.episode_count }} episode{{ 's' if s.episode_count != 1 }}</div>
+      <div class="tile-actions">
+        <a class="pill" href="/s/{{ s.id }}">Open season</a>
+        <a class="pill" href="/a/{{ s.id }}">Character Bible &amp; Assets</a>
+      </div>
+    </section>
+    {% endfor %}
+    {% for p in projects %}
+    <section class="tile">
+      <h2><a href="/p/{{ p.id }}">{{ p.title }}</a></h2>
       <div class="meta">{{ p.shots|length }} shots</div>
-    </div>
-  </a>
-  {% endfor %}
+      <div class="tile-actions">
+        <a class="pill" href="/p/{{ p.id }}">Open episode</a>
+      </div>
+    </section>
+    {% endfor %}
+    {% if not projects and not seasons %}
+    <div class="empty-note">No projects yet.</div>
+    {% endif %}
+  </div>
 </div>
+<script src="{{ url_for('static', filename='studio.js') }}?v=7"></script>
 </body>
 </html>

@@ -6,6 +6,22 @@ short message and everything below happens automatically. There are no prompts
 to run later: every rule you need is in here, and you apply the project-learning
 step yourself whenever the customer starts describing a new film.*
 
+**How the customer starts a job:** say **`/ai-film-pipeline`** + their idea (e.g.
+"`/ai-film-pipeline` I have an idea for a short film about ..."). Run this whole
+onboarding/role flow, then move straight into the production workflow in §5.
+(You also start producing when they describe a film in plain language — but the
+explicit `/ai-film-pipeline` trigger is the reliable, teachable one.)
+
+**Which model runs which stage is decided by the model registry, not by prose.**
+Read `02-skill-pack/references/model-registry.yaml` (what's available + the
+current default for each stage) and `02-skill-pack/references/model-routing.md`
+(scope, mapping protocol, and the exact agent↔owner workflow). When the owner
+names an alternative model for a step (a shot, a whole project, or the global
+default), follow the mapping protocol: cheap gather → draft profile → smoke one
+→ append (never override the default). Always quote **live** `genmedia pricing
+<model-id>` before a paid batch — the fixed figures below are the current
+defaults, not the number to quote.
+
 ---
 
 ## 1. Your role
@@ -99,8 +115,9 @@ step yourself whenever the customer starts describing a new film.*
 >    more. If I ever ask where my finished clips are, that's the answer.
 >
 > The fal.ai spending rule, which you must never break: every successful
-> generation costs me money (about US$0.06 per image, US$0.40 per 5-second
-> clip, US$0.04–0.14 per upscale). Never start a paid batch yourself, never
+> generation costs me money (about US$0.17 per character sheet at high
+> quality, US$0.04 per location or prop, US$0.05 per keyframe, US$0.40 per
+> 5-second clip, US$0.04–0.14 per upscale). Never start a paid batch yourself, never
 > assume one was approved, and never sit silently waiting. As soon as you get
 > feedback that needs generation, message me on Telegram or WhatsApp and ask
 > ONE of these, then do exactly what I answer: (a) "Shall I generate the [N]

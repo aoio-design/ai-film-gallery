@@ -1,0 +1,141 @@
+# Model Registry — single source of truth for model bindings (customer-pack mirror)
+#
+# THE append-only home for every model the pipeline has been mapped to. Rows are
+# NEVER deleted; a model is added once (mapped), then SELECTED by scope. This file
+# is data, not prose. The pipeline, fal-ai-ops and keyframe-authoring skills point
+# here as the authority for "which model runs which stage".
+#
+# How to read it:
+#   state        mapped = profile verified + wired; draft = being mapped; unverified = needs smoke test.
+#   "quality dialect" is MODEL-SPECIFIC vocabulary that controls fidelity for THAT model.
+#                It is NOT inherited across models (e.g. the gpt-image-2 finding that
+#                camera/lens/lighting/texture words beat "photorealistic" is NOT a law — a
+#                new model's own documented dialect wins until verified by smoke test).
+#   dims / frame-pair   for VIDEO models these DRIVE the keyframe stage (the video binding
+#                owns the frame aspect ratio + whether an opening/closing pair is required).
+#   cost basis   best-known figures; ALWAYS re-quote live via `genmedia pricing <id>` before a
+#                paid batch — this column is guidance only, never the number you quote the user.
+#
+# Append under the matching `stage:` key. bump `last_verified` when you re-confirm a profile.
+
+registry_version: 1.0.0
+
+binding_scopes:            # resolved highest -> lowest at generation time
+  - shot                   # one shot -> one alternative model (e.g. Ep3-12A -> seedance-2.5)
+  - project                # a whole film pins alternatives (set at project creation)
+  - global_default         # the frozen stack for new projects (see below)
+
+stages:                    # model-agnostic — the "what" never varies
+  - reference_images       # character sheets / location set stills / prop sheets
+  - keyframe               # first frame per shot (or opening+closing IF the video binding demands it)
+  - video                  # clip with dialogue + sound
+  - master                 # upscale to delivery resolution
+
+global_default:            # the frozen stack (unchanged unless the owner names a model)
+  reference_images: openai/gpt-image-2
+  keyframe: openai/gpt-image-2/edit
+  video: minimax/h3-max/image-to-video
+  master: fal-ai/bytedance-upscaler/upscale/video
+
+# ────────────────────────────────────────────────────────────────────────────
+# GLOBAL DEFAULT (frozen) — mapped++ and verified
+# ────────────────────────────────────────────────────────────────────────────
+profiles:
+  - id: gpt-image-2-txt2img
+    stage: reference_images
+    name: GPT Image 2 (text-to-image)
+    model: openai/gpt-image-2
+    state: mapped
+    default: true
+    subtypes:                   # layout conventions are pipeline-owned (see stages.md)
+      - character: { prompt: character-3-panel, dims: "1024x1536", quality: high, cost: "~$0.165" }
+      - location:  { prompt: location-4-panel, dims: "1024x768",  quality: medium, cost: "~$0.037" }
+      - prop:      { prompt: prop-2-view,      dims: "1024x768",  quality: medium, cost: "~$0.037" }
+    prompt_dialect: "Scene / Subject / Important details / Use case / Constraints"
+    quality_dialect: "camera/lens/lighting/texture vocabulary (camera body, lens mm, light source,
+      exposure, texture) — verified for THIS model to beat bare 'photorealistic' keywords.
+      NOT a global law: do not inherit this into another model's profile without its own verification."
+    frame_pair: false
+    source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
+    last_verified: "2026-08-31"
+    verified_by: owner
+
+  - id: gpt-image-2-edit
+    stage: keyframe
+    name: GPT Image 2 edit (first-frame composition)
+    model: openai/gpt-image-2/edit
+    state: mapped
+    default: true
+    accepts_refs: true           # image_urls (up to 9); optional mask_image_url for surgical edits
+    prompt_dialect: "composition-from-references: put subject from ref N into setting from ref M"
+    quality_dialect: "same fidelity vocab as txt2img; CRITICAL: preserve the ONE face — the sheet's
+      facial close-up must read as the character. mouth closed/neutral on dialogue shots."
+    dims: "auto (inherits output ~1344x768); MUST match the video binding's target AR"
+    frame_pair: false            # single first frame — unless the SELECTED video binding requires a pair
+    source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
+    last_verified: "2026-08-31"
+    verified_by: owner
+
+  - id: h3-max-video
+    stage: video
+    name: MiniMax H3 Max (image-to-video)
+    model: minimax/h3-max/image-to-video
+    state: mapped
+    default: true
+    prompt_dialect: "H3 six-section block (subject_definitions / summary / retention_analysis /
+      detailed_description / overall_soundscape / non_diegetic_music). See minimax-h3-prompting."
+    quality_dialect: "dialogue INSIDE quotes in the prompt with a delivery tone (model speaks +
+      lip-syncs); one speaker per clip, lines <= 5s; soundscape stated explicitly; motion-only
+      complement to the keyframe."
+    dims: "768p (1344x768 sweet spot); accepts exact first frame fed in as-is"
+    frame_pair: false
+    source_of_truth: ["https://fal.ai/models/minimax/h3-max", "https://platform.minimaxi.com"]
+    last_verified: "2026-09-01"
+    verified_by: owner
+
+  - id: bytedance-upscaler
+    stage: master
+    name: Bytedance video upscaler
+    model: fal-ai/bytedance-upscaler/upscale/video
+    state: mapped
+    default: true
+    params: { target_resolution: 4k, enhancement_preset: aigc }
+    prompt_dialect: none         # no prompt — param-driven
+    dims: "upscales 1080p->4k"
+    source_of_truth: ["https://fal.ai/models/fal-ai/bytedance-upscaler"]
+    last_verified: "2026-09-01"
+    verified_by: owner
+
+# ────────────────────────────────────────────────────────────────────────────
+# RECOGNIZED-UNMAPPED — prior art exists (skills/notes) but NO verified binding yet.
+# Selecting one of these = run the mapping protocol (see model-routing.md) first:
+# cheap gather -> draft profile -> smoke test -> append SOLID profile -> then batch.
+# ────────────────────────────────────────────────────────────────────────────
+  - id: seedance-25
+    stage: video
+    name: Seedance 2.5
+    model: "TBD (query fal/models for exact id)"
+    state: recognized-unmapped
+    prompt_dialect: "HAS prior art: ai-film/seedance skill (10 techniques: audio refs, JSON,
+      Chinese translation, storyboards, video refs, camera moves, character sheets, location refs,
+      timestamps, resolution strategy). NOT YET bound."
+    quality_dialect: "provisional (owner-reported): strong on FAST-ACTION clips vs H3 Max; pricier."
+    dims: "TO FETCH (drives keyframe AR + possible frame-pair)"
+    frame_pair: "CHECK — Seedance generally supports refs/pairs; confirm for this stage"
+    source_of_truth: ["https://fal.ai/models/seedance"]
+    last_verified: null
+    verified_by: null
+
+  - id: nanobanana-pro-edit
+    stage: keyframe        # owner example: use for the EDIT step only; contained, no video cascade
+    name: nanobanana pro (edit)
+    model: "TBD (OpenArt host tool — check availability via fal/OpenArt)"
+    state: recognized-unmapped
+    prompt_dialect: "HAS prior art: nanobanana pro on OpenArt; @tag style references in prompt text.
+      NOT YET bound for the keyframe-edit deliverable."
+    quality_dialect: "UNKNOWN — do not inherit gpt-image-2's vocabulary; verify by smoke test."
+    dims: "TO FETCH / decide (must still match video binding's AR)"
+    frame_pair: false
+    source_of_truth: ["https://openart.ai"]
+    last_verified: null
+    verified_by: null

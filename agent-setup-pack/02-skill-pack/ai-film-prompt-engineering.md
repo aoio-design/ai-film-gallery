@@ -27,41 +27,35 @@ Max). The rules below are the ones that actually move quality.*
 4. **No text, no watermark, no labels** — append to image prompts when text
    bleeding is a risk.
 
-## Image prompts (FLUX 1.1 pro ultra / FLUX 2 pro edit)
+## Image prompts (GPT Image 2 / GPT Image 2 edit)
 
-FLUX models follow **long, detailed, natural-language instructions** — 80–250
-words of structured, camera-style description beats tag soup every time.
-
-**Formula:**
+GPT Image 2 follows a **structured prompt template** — it reasons about the
+prompt and adheres strongly to long, multi-part instructions. Use this exact
+shape (the model's own documented format):
 
 ```
-[Shot type & subject] + [Age & appearance] + [Clothing] + [Environment] +
-[Lighting & mood] + [Style/medium] + [Camera angle & lens] + [Constraints]
+Scene: [where this happens, time of day, background, environment]
+Subject: [who or what is the main focus]
+Important details: [materials, clothing, texture, lighting, camera angle, lens feel, composition, mood]
+Use case: [editorial photo / product mockup / concept frame]
+Constraints: [no watermark / no logos / no extra text / preserve face / preserve layout]
 ```
 
-**JSON-structured prompts** give the most control for complex shots (FLUX
-supports them natively):
+**Asset templates (see the character-set-design skill):** character sheet =
+two-panel (face close-up + full-body front/back) on neutral grey, "avoid
+polished or symmetrical features", ONE face; location = 3/4-angle cinematic
+still, empty of people, motivated lighting; prop = white-background product
+sheet, front + 3/4 views, no text.
 
-```json
-{
-  "scene": "Overall setting description",
-  "subjects": [
-    {"type": "Subject category", "description": "Physical attributes and details", "pose": "Action or stance", "position": "foreground/midground/background"}
-  ],
-  "style": "Artistic rendering approach",
-  "color_palette": ["color1", "color2", "color3"],
-  "lighting": "Lighting conditions and direction",
-  "mood": "Emotional atmosphere",
-  "composition": "rule of thirds/centered/dynamic diagonal",
-  "camera": {"angle": "eye level/low angle/high angle", "distance": "close-up/medium shot/wide shot", "lens": "35mm/50mm/85mm"}
-}
-```
+**Keyframes** (`openai/gpt-image-2/edit`): upload the reference images as
+`image_urls`, describe the composition ("the woman from the first reference
+image, in the cafe from the second reference image"); optional mask for
+surgical edits.
 
-**HEX color control** — exact colors with `color #HEX` or `hex #HEX`:
-"a wall painted in color #2ECC71". Pair with a swatch image for accuracy.
-
-**@tag references** — FLUX 2 pro edit understands `@image1`–`@image9` for the
-uploaded images: "the person from @image1 wearing the outfit from @image2".
+**LEGACY — FLUX prompting (pre-GPT Image 2):** natural-language Subject +
+Action + Style + Context, JSON structured prompts, `@image1`–`@image9`
+reference tags, HEX colors. Official rules in `flux-prompting`. Do not use
+FLUX structure for GPT Image 2 prompts.
 
 ## Video prompts (MiniMax H3 Max)
 

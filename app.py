@@ -11,7 +11,7 @@ Rows per shot:
 
 Auth: email + password (AOIO account store) via session cookie.
 """
-import json, os, sys, uuid, shutil, secrets, time, hmac
+import json, os, re, sys, uuid, shutil, secrets, time, hmac
 from pathlib import Path
 from datetime import datetime, timezone
 from functools import wraps
@@ -45,6 +45,16 @@ app.config.update(
     # http://127.0.0.1, or the browser will refuse to send the cookie.
     SESSION_COOKIE_SECURE=os.environ.get("GALLERY_SECURE_COOKIE", "") == "1",
 )
+
+
+@app.after_request
+def _no_cache_html(response):
+    """Prevent Cloudflare from caching HTML pages so CSS/JS changes go live
+    immediately on hard refresh."""
+    if response.content_type and response.content_type.startswith("text/html"):
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
 
 # --- Config ---
 BASE_DIR = Path(__file__).parent
@@ -132,13 +142,30 @@ def get_shot_meta(project_id, shot_id):
     d = get_shot_dir(project_id, shot_id)
     meta_file = d / "metadata.json"
     if meta_file.exists():
-        return json.loads(meta_file.read_text())
+        try:
+            return json.loads(meta_file.read_text())
+        except Exception:
+            bak = meta_file.with_suffix(".json.bak")
+            if bak.exists():
+                try:
+                    meta = json.loads(bak.read_text())
+                    meta_file.write_text(json.dumps(meta, indent=2))
+                    return meta
+                except Exception:
+                    pass
+            return {}
     return {}
 
 def save_shot_meta(project_id, shot_id, meta):
     d = get_shot_dir(project_id, shot_id)
     d.mkdir(parents=True, exist_ok=True)
-    (d / "metadata.json").write_text(json.dumps(meta, indent=2))
+    meta_file = d / "metadata.json"
+    if meta_file.exists():
+        try:
+            (d / "metadata.json.bak").write_text(meta_file.read_text())
+        except Exception:
+            pass
+    meta_file.write_text(json.dumps(meta, indent=2))
 
 # --- Routes ---
 
@@ -230,23 +257,50 @@ def gallery(project_id):
         abort(404)
 
     # Load shot metadata
+    # Multi-file media support (regeneration history): all images/videos in the
+    # shot dir, with a user-selectable "primary" per kind shown by default.
+    IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+    VIDEO_EXTS = (".mp4", ".webm", ".mov")
+
+    def list_shot_media(project_id, shot_id):
+        """(image_filenames, video_filenames) sorted naturally-ish."""
+        sd = get_shot_dir(project_id, shot_id)
+        images, videos = [], []
+        if sd.exists():
+            for f in sorted(sd.iterdir()):
+                if not f.is_file() or f.name == "metadata.json":
+                    continue
+                n = f.name.lower()
+                if n.startswith("image") and n.endswith(IMAGE_EXTS):
+                    images.append(f.name)
+                elif n.endswith(VIDEO_EXTS):
+                    videos.append(f.name)
+        return images, videos
+
+    def _natural(s):
+        return [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", s)]
+
     for shot in project["shots"]:
         meta = get_shot_meta(project_id, shot["id"])
         shot["script"] = meta.get("script", "")
         shot["image_prompt"] = meta.get("image_prompt", "")
         shot["video_prompt"] = meta.get("video_prompt", "")
         shot["feedback"] = meta.get("feedback", [])
-        shot["audio_note"] = meta.get("audio_note", "")
-        shot["expected_audio"] = meta.get("expected_audio", [])
-        # Check if image/video files exist
-        sd = get_shot_dir(project_id, shot["id"])
-        shot["has_image"] = any(f.name in ("image.png", "image.jpg") for f in sd.iterdir()) if sd.exists() else False
-        shot["has_video"] = any(f.suffix in (".mp4", ".webm", ".mov") for f in sd.iterdir()) if sd.exists() else False
-        # Audio files (multiple supported) — sorted by filename
-        audio_ext = (".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aac")
-        shot["audio_files"] = sorted(
-            [f.name for f in sd.iterdir() if f.suffix.lower() in audio_ext]
-        ) if sd.exists() else []
+        images, videos = list_shot_media(project_id, shot["id"])
+        images.sort(key=_natural)
+        videos.sort(key=_natural)
+        shot["images"] = images
+        shot["videos"] = videos
+        shot["primary_image"] = (
+            meta.get("primary_image") if meta.get("primary_image") in images
+            else (images[0] if images else None)
+        )
+        shot["primary_video"] = (
+            meta.get("primary_video") if meta.get("primary_video") in videos
+            else (videos[0] if videos else None)
+        )
+        shot["has_image"] = bool(images)
+        shot["has_video"] = bool(videos)
 
     # Episode script: use the saved editable copy if it exists, else assemble
     # from each shot's script field (with [ShotID] markers for orientation).
@@ -322,11 +376,163 @@ def update_shot(project_id, shot_id):
     meta = get_shot_meta(project_id, shot_id)
     field = request.form.get("field")
     value = request.form.get("value", "")
-    if field in ("image_prompt", "video_prompt", "script"):
+    if field in ("image_prompt", "video_prompt", "script", "primary_image", "primary_video"):
         meta[field] = value
         save_shot_meta(project_id, shot_id, meta)
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Unknown field"}), 400
+
+
+@app.route("/p/<project_id>/<shot_id>/upload", methods=["POST"])
+@login_required
+def upload_shot_media(project_id, shot_id):
+    """Add one or more generated images/videos to a shot (regeneration history).
+
+    Existing files are never overwritten — a name collision gets a numeric
+    suffix (image.png -> image-2.png). First image/video added becomes the
+    primary automatically.
+    """
+    d = get_shot_dir(project_id, shot_id)
+    d.mkdir(parents=True, exist_ok=True)
+    meta = get_shot_meta(project_id, shot_id)
+    IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+    VIDEO_EXTS = (".mp4", ".webm", ".mov")
+    saved, skipped = [], []
+    for f in request.files.getlist("files"):
+        name = (f.filename or "").strip()
+        if not name:
+            continue
+        base = os.path.basename(name).replace(" ", "-")
+        stem, ext = os.path.splitext(base)
+        ext = ext.lower()
+        if ext not in IMAGE_EXTS + VIDEO_EXTS:
+            skipped.append(base)
+            continue
+        candidate = stem + ext
+        n = 2
+        while (d / candidate).exists():
+            candidate = f"{stem}-{n}{ext}"
+            n += 1
+        f.save(str(d / candidate))
+        saved.append(candidate)
+    if saved:
+        if ext_group(saved[0], IMAGE_EXTS, VIDEO_EXTS) == "image":
+            meta.setdefault("primary_image", saved[0])
+        else:
+            meta.setdefault("primary_video", saved[0])
+        save_shot_meta(project_id, shot_id, meta)
+    return jsonify({"ok": True, "saved": saved, "skipped": skipped})
+
+
+def ext_group(filename, image_exts, video_exts):
+    n = filename.lower()
+    for e in image_exts:
+        if n.endswith(e):
+            return "image"
+    for e in video_exts:
+        if n.endswith(e):
+            return "video"
+    return "other"
+
+
+@app.route("/agent_feedback", methods=["POST"])
+@login_required
+def agent_feedback():
+    """Unified "Talk to your agent" feedback from the studio drawer.
+
+    Auto-tagged with where the user was when they wrote it (project, section,
+    shot / asset) plus the visible text of that context, so the agent gets
+    "script, lines 13-15" style grounding without the user typing it.
+    Appends to the SAME per-target feedback files the watcher reads.
+    FULL DESIGN NOTES for this loop: see docs/FAB-DESIGN.md in this repo.
+    """
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"ok": False, "error": "Empty feedback"}), 400
+    ctx = data.get("context") or {}
+    project_id = ctx.get("project")
+    target = ctx.get("target")          # 'episode' | 'shot' | 'asset' | None
+    ident = ctx.get("id")
+    section = ctx.get("section")        # 'Episode Script' | 'Video Preview' | 'Shot List' | 'Assets'
+    label = ctx.get("label") or ""
+
+    stamp = datetime.now(timezone.utc).isoformat()
+    entry_text = text
+    if section:
+        entry_text = f"[{section}" + (f" · {label}]" if label else "]") + f" {text}"
+
+    written = None
+    if target == "episode" and project_id:
+        f = SHOTS_DIR / project_id / "_episode_script.json"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        d = {}
+        if f.exists():
+            try:
+                d = json.loads(f.read_text())
+            except Exception:
+                d = {}
+        d.setdefault("feedback", []).append({"timestamp": stamp, "text": entry_text})
+        if "text" not in d:
+            d["text"] = ""
+        f.write_text(json.dumps(d, indent=2))
+        written = f"{project_id}/_episode_script.json"
+    elif target == "shot" and project_id and ident:
+        meta = get_shot_meta(project_id, ident)
+        meta.setdefault("feedback", []).append({"timestamp": stamp, "text": entry_text})
+        save_shot_meta(project_id, ident, meta)
+        written = f"{project_id}/{ident}/metadata.json"
+    elif target == "asset" and project_id and ident:
+        meta = get_asset_meta(project_id, ident)
+        meta.setdefault("feedback", []).append({"timestamp": stamp, "text": entry_text})
+        save_asset_meta(project_id, ident, meta)
+        written = f"assets/{project_id}/{ident}/metadata.json"
+    else:
+        # No specific target — park it in a studio-wide inbox the watcher covers
+        # by convention (shots/_studio_feedback.json).
+        f = SHOTS_DIR / "_studio_feedback.json"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        d = []
+        if f.exists():
+            try:
+                d = json.loads(f.read_text())
+            except Exception:
+                d = []
+        d.append({"timestamp": stamp, "text": entry_text})
+        f.write_text(json.dumps(d, indent=2))
+        written = "_studio_feedback.json"
+
+    print(f"[studio] agent feedback ({written}): {text[:120]}", flush=True)
+    return jsonify({"ok": True, "written": written})
+
+@app.route("/agent_replies", methods=["GET"])
+@login_required
+def agent_replies():
+    """Agent replies to the owner's feedback, shown in the studio drawer.
+
+    The background feedback watcher (agent-mode cron) writes its actions/replies
+    to SHOTS_DIR/_agent_replies.json as a list. The drawer polls this endpoint
+    and displays any new replies. Optionally filter by ?project=.
+    FULL DESIGN NOTES for this loop: see docs/FAB-DESIGN.md in this repo.
+    """
+    f = SHOTS_DIR / "_agent_replies.json"
+    replies = []
+    if f.exists():
+        try:
+            replies = json.loads(f.read_text(encoding="utf-8"))
+            if not isinstance(replies, list):
+                replies = []
+        except Exception:
+            replies = []
+    project = (request.args.get("project") or "").strip()
+    if project:
+        # Keep replies for THIS project AND general replies (no specific project),
+        # so a project-scoped page still shows notes the agent answered generally.
+        replies = [r for r in replies if (r.get("project") or "") == project
+                   or not (r.get("project") or "").strip()]
+    # Newest first
+    replies.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
+    return jsonify({"replies": replies})
 
 @app.route("/p/<project_id>/<shot_id>/feedback", methods=["POST"])
 @login_required
@@ -352,13 +558,29 @@ def get_asset_meta(project_id, asset_id):
         try:
             return json.loads(f.read_text())
         except Exception:
+            # Corrupt file: try the backup instead of returning {} (which would let
+            # the next read-modify-write silently wipe all other fields).
+            bak = f.with_suffix(".json.bak")
+            if bak.exists():
+                try:
+                    meta = json.loads(bak.read_text())
+                    f.write_text(json.dumps(meta, indent=2))
+                    return meta
+                except Exception:
+                    pass
             return {}
     return {}
 
 def save_asset_meta(project_id, asset_id, meta):
     d = APP_ASSETS_DIR / project_id / asset_id
     d.mkdir(parents=True, exist_ok=True)
-    (d / "metadata.json").write_text(json.dumps(meta, indent=2))
+    f = d / "metadata.json"
+    if f.exists():
+        try:
+            (d / "metadata.json.bak").write_text(f.read_text())
+        except Exception:
+            pass
+    f.write_text(json.dumps(meta, indent=2))
 
 def _billing(role):
     """Billing order for the Character Bible: leads first, then supporting."""
@@ -405,11 +627,15 @@ def assets_page(assets_scope):
                 "emotional_range": meta.get("emotional_range", ""),
                 "body_language": meta.get("body_language", ""),
                 "voice": meta.get("voice", ""),
+                "character_sheet_prompt": meta.get("character_sheet_prompt", ""),
+                "voice_prompt": meta.get("voice_prompt", ""),
                 "status": meta.get("status", ""),
                 "description": meta.get("description", ""),
                 "prompt": meta.get("prompt", ""),
                 "feedback": meta.get("feedback", []),
                 "image": images[0] if images else None,
+                "primary_image": (meta.get("primary_image") if meta.get("primary_image") in images
+                                  else (images[0] if images else None)),
                 "audio": audios[0] if audios else None,
                 "images": images,
                 "audios": audios,
@@ -433,7 +659,10 @@ def update_asset(project_id, asset_id):
     meta = get_asset_meta(project_id, asset_id)
     field = request.form.get("field")
     value = request.form.get("value", "")
-    if field in ("name", "type", "role", "appearance", "personality", "distinguishing", "wardrobe", "emotional_range", "body_language", "voice", "status", "description", "prompt"):
+    if field in ("name", "type", "role", "appearance", "personality", "distinguishing",
+                 "wardrobe", "emotional_range", "body_language", "voice", "status",
+                 "description", "prompt", "character_sheet_prompt", "voice_prompt",
+                 "primary_image"):
         meta[field] = value
         save_asset_meta(project_id, asset_id, meta)
         return jsonify({"ok": True})

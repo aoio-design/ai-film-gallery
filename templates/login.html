@@ -3,86 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Film Studio — Login</title>
+<title>AI Film Studio — Sign in</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=7">
 <style>
-:root {
-  --bg:#0a0c12; --bg2:#0e1119; --panel:#131722; --panel2:#171c29;
-  --line:#242b3d; --text:#e8ebf2; --mut:#96a0b4;
-  --gold:#c9a86a; --gold-hi:#ddc089; --gold-dim:rgba(201,168,106,.12);
-  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
-  --serif:Georgia,'Times New Roman',serif;
-}
-/* light mode (same as Guide site) */
-html.light {
-  --bg:#f4f3ef; --bg2:#fbfaf7; --panel:#ffffff; --panel2:#f0eee7;
-  --line:#ded9cc; --text:#232a3a; --mut:#6b7280;
-  --gold:#a67c2e; --gold-hi:#8f6a22; --gold-dim:rgba(166,124,46,.12);
-  --ok:#2f8f63; --danger:#c24557;
-}
-#theme-toggle { position:fixed; top:14px; right:18px; z-index:120; cursor:pointer;
-  font-size:17px; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
-  background:var(--panel); border:1px solid var(--line); border-radius:50%;
-  box-shadow:0 6px 18px rgba(0,0,0,.25); user-select:none; }
-#theme-toggle:hover { border-color:var(--gold); }
-* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: var(--sans);
-  background: var(--bg);
-  color: var(--text);
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh;
+  display:flex; align-items:center; justify-content:center;
+  min-height:100vh; padding:24px;
+  background:
+    radial-gradient(1100px 480px at 85% -10%, var(--blue-soft), transparent 60%),
+    radial-gradient(900px 420px at 10% 110%, var(--ok-soft), transparent 55%),
+    var(--bg);
 }
 .login-box {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 40px;
-  width: 360px;
+  width:380px; padding:38px 34px;
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:20px; box-shadow:var(--shadow);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
 }
-h1 { font-family: var(--serif); font-size: 22px; margin-bottom: 24px; color: var(--text); }
-h1 span { color: var(--gold); }
-input[type="password"], input[type="email"] {
-  width: 100%; padding: 12px; border-radius: 6px;
-  border: 1px solid var(--line); background: var(--bg2); color: var(--text);
-  font-size: 16px; margin-bottom: 14px; font-family: var(--sans);
+h1 { font-size:22px; font-weight:800; margin-bottom:4px; letter-spacing:-.02em; }
+.sub { color:var(--mut); font-size:13px; margin-bottom:24px; }
+.input { margin-bottom:12px; }
+.btn-signin { width:100%; margin-top:6px; padding:12px; font-size:15px; }
+.error {
+  color:var(--red); background:var(--red-soft);
+  border-radius:var(--r-sm); padding:9px 12px;
+  font-size:13px; margin-bottom:14px;
 }
-input[type="password"]:focus, input[type="email"]:focus { outline: none; border-color: var(--gold); }
-button {
-  width: 100%; padding: 12px; border-radius: 6px;
-  border: 1px solid var(--gold); background: var(--gold-dim); color: var(--gold);
-  font-size: 16px; cursor: pointer; font-family: var(--sans);
+.hint {
+  color:var(--mut); font-size:12.5px; line-height:1.55; margin-top:20px;
+  border-top:1px solid var(--line-soft); padding-top:14px;
 }
-button:hover { background: var(--gold); color: #0a0c12; }
-.error { color: #e05d6f; margin-bottom: 16px; font-size: 14px; }
-.hint { color: var(--mut); font-size: 12.5px; line-height: 1.55; margin-top: 18px;
-  border-top: 1px solid var(--line); padding-top: 14px; }
+.hint code { font-family:var(--mono); font-size:11.5px; }
+.theme-toggle { position:fixed; top:16px; right:18px; }
 </style>
 </head>
 <body>
-<div id="theme-toggle" onclick="toggleTheme()" title="Toggle light / dark mode">🌙</div>
-<script>
-(function(){var t=localStorage.getItem('aio-theme');if(t==='light'){document.documentElement.classList.add('light');var b=document.getElementById('theme-toggle');if(b)b.textContent='☀️'}})();
-function toggleTheme(){var h=document.documentElement;h.classList.toggle('light');var l=h.classList.contains('light');localStorage.setItem('aio-theme',l?'light':'dark');document.getElementById('theme-toggle').textContent=l?'☀️':'🌙'}
-</script>
-<div class="login-box">
-  <h1>AI Film <span>Studio</span></h1>
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle appearance">🌙</button>
+<div class="login-box"><h1>AI Film Studio</h1>
+  <div class="sub">Sign in to your productions.</div>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
   {% if bootstrap %}
   <form method="POST">
-    <input type="password" name="password" placeholder="One-time setup code" autofocus autocomplete="off">
-    <button type="submit">Enter</button>
+    <input class="input" type="password" name="password" placeholder="One-time setup code" autofocus autocomplete="off">
+    <button class="pill btn-signin" type="submit">Enter</button>
   </form>
   <div class="hint">First run — no accounts yet. Your one-time setup code was printed to
     <code>gallery.log</code> on the server. Ask your agent to create your account, then sign in with your email.</div>
   {% else %}
   <form method="POST">
-    <input type="email" name="email" placeholder="Email" autofocus autocomplete="username" spellcheck="false">
-    <input type="password" name="password" placeholder="Password" autocomplete="current-password">
-    <button type="submit">Sign in</button>
+    <input class="input" type="email" name="email" placeholder="Email" autofocus autocomplete="username" spellcheck="false">
+    <input class="input" type="password" name="password" placeholder="Password" autocomplete="current-password">
+    <button class="pill btn-signin" type="submit">Sign in</button>
   </form>
   <div class="hint">Forgot your password? This studio can't email you — it has no mail server.
     Ask your Hermes agent to reset it for you.</div>
   {% endif %}
 </div>
+<script src="{{ url_for('static', filename='studio.js') }}?v=7"></script>
 </body>
 </html>

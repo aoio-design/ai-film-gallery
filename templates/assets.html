@@ -4,248 +4,282 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Character Bible &amp; Assets — {{ scope_title }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=7">
 <style>
-:root {
-  --bg:#0a0c12; --bg2:#0e1119; --panel:#131722; --panel2:#171c29;
-  --line:#242b3d; --text:#e8ebf2; --mut:#96a0b4;
-  --gold:#c9a86a; --gold-hi:#ddc089; --gold-dim:rgba(201,168,106,.12);
-  --ok:#4cb782; --danger:#e05d6f;
-  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
-  --serif:Georgia,'Times New Roman',serif;
-  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+body { padding:0; }
+.header {
+  padding:10px 20px; display:flex; align-items:center; gap:14px;
+  border-bottom:1px solid var(--line); background:var(--panel);
+  position:sticky; top:0; z-index:50;
 }
-/* light mode (same as Guide site) */
-html.light {
-  --bg:#f4f3ef; --bg2:#fbfaf7; --panel:#ffffff; --panel2:#f0eee7;
-  --line:#ded9cc; --text:#232a3a; --mut:#6b7280;
-  --gold:#a67c2e; --gold-hi:#8f6a22; --gold-dim:rgba(166,124,46,.12);
-  --ok:#2f8f63; --danger:#c24557;
+.header h1 { font-size:16px; font-weight:700; }
+.back { color:var(--blue); text-decoration:none; font-size:13px; font-weight:500; }
+.back:hover { text-decoration:underline; }
+.header .spacer { flex:1; }
+.wrap { max-width:1240px; margin:0 auto; padding:26px 24px 120px; }
+.subtitle { color:var(--mut); font-size:13px; margin:4px 0 24px; }
+
+h2 { font-size:19px; font-weight:700; margin:30px 0 12px; }
+h2 .count { color:var(--mut); font-size:13px; font-weight:500; margin-left:6px; }
+h2:first-of-type { margin-top:0; }
+
+/* ---------- Asset accordion rows ---------- */
+.asset { margin-bottom:12px; overflow:hidden; }
+.asset-head {
+  width:100%; display:flex; align-items:center; gap:14px;
+  padding:12px 16px; background:transparent; border:none; cursor:pointer;
+  text-align:left; font-family:var(--sans); color:var(--text);
+  transition:background .15s;
 }
-#theme-toggle { position:fixed; top:14px; right:18px; z-index:120; cursor:pointer;
-  font-size:17px; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
-  background:var(--panel); border:1px solid var(--line); border-radius:50%;
-  box-shadow:0 6px 18px rgba(0,0,0,.25); user-select:none; }
-#theme-toggle:hover { border-color:var(--gold); }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
-.wrap { max-width: 1200px; margin: 0 auto; }
-.header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
-.back { color: var(--gold); text-decoration: none; font-size: 13px; }
-.back:hover { color: var(--gold-hi); text-decoration: underline; }
-h1 { font-family: var(--serif); font-size: 22px; color: var(--text); }
-.subtitle { color: var(--mut); font-size: 13px; margin-bottom: 26px; }
+.asset-head:hover { background:var(--panel2); }
+.asset-avatar {
+  width:44px; height:44px; border-radius:var(--r-sm); object-fit:cover;
+  background:var(--panel2); border:1px solid var(--line); flex-shrink:0;
+}
+.asset-name { font-size:15px; font-weight:700; }
+.asset-meta { font-size:12px; color:var(--mut); margin-top:2px; }
+.asset-summary { display:flex; align-items:center; gap:10px; margin-left:auto; }
+.status {
+  display:inline-block; font-size:10.5px; font-weight:600; padding:3px 10px;
+  border-radius:980px; border:1px solid var(--line); color:var(--mut);
+  text-transform:uppercase; letter-spacing:.05em; white-space:nowrap;
+}
+.status.approved { color:var(--ok); border-color:var(--ok); background:var(--ok-soft); }
+.status.revision { color:var(--red); border-color:var(--red); background:var(--red-soft); }
+.status.generated { color:var(--blue); border-color:var(--blue); background:var(--blue-soft); }
+.asset-head .minus { display:none; }
+.asset.open .asset-head .plus { display:none; }
+.asset.open .asset-head .minus { display:inline-flex; }
+.asset-body {
+  max-height:0; opacity:0; overflow:hidden;
+  transition:max-height .3s ease-in-out, opacity .3s ease-in-out;
+}
+.asset.open .asset-body { max-height:2400px; opacity:1; }
+.asset-body-inner { padding:4px 16px 18px; border-top:1px solid var(--line-soft); }
 
-h2 { font-family: var(--serif); font-size: 17px; color: var(--gold-hi); margin: 30px 0 12px; }
-h2 .count { color: var(--mut); font-size: 12px; font-family: var(--sans); }
+.bible-grid {
+  display:grid; grid-template-columns:repeat(4, minmax(0,1fr));
+  gap:14px; margin:14px 0;
+}
+@media (max-width:1180px) { .bible-grid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+@media (max-width:640px)  { .bible-grid { grid-template-columns:1fr; } }
+.cell-label {
+  font-size:10.5px; font-weight:700; color:var(--mut);
+  text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px;
+}
+.bible-ta { min-height:130px; }
+.asset-row2 {
+  display:grid; grid-template-columns:1.4fr 1fr; gap:14px; margin-top:4px;
+}
+@media (max-width:900px){ .asset-row2 { grid-template-columns:1fr; } }
+.thumb { width:76px; height:76px; }
+.thumb img, .thumb video { border-radius:6px; }
+.thumb audio { display:none; }
+audio.voice {
+  width:100%; max-width:280px; height:34px; display:block; margin-bottom:6px;
+}
+.fb-history .msg { margin-bottom:5px; }
 
-table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 13px; }
-th { background: var(--panel2); color: var(--gold); font-weight: 600; text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
-td { padding: 10px 12px; border-top: 1px solid var(--line); vertical-align: top; }
-tr:first-child td { border-top: 0; }
-td .muted { color: var(--mut); }
+/* Expand / collapse all */
+.bulk-row { display:flex; gap:8px; margin-bottom:14px; }
 
-.thumb { display: flex; gap: 6px; flex-wrap: wrap; }
-.thumb img { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); }
-.thumb audio { max-width: 220px; height: 30px; }
-
-.status { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); color: var(--mut); text-transform: uppercase; letter-spacing: .05em; }
-.status.approved { color: var(--ok); border-color: var(--ok); }
-.status.revision { color: var(--danger); border-color: var(--danger); }
-.status.generated { color: var(--gold); border-color: var(--gold); }
-
-.prompt-ta { width: 100%; min-width: 240px; background: var(--bg2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 12px; font-family: var(--sans); padding: 6px 8px; resize: vertical; min-height: 40px; }
-.prompt-ta:focus { outline: none; border-color: var(--gold); }
-
-.bible-ta { width: 100%; min-width: 190px; background: var(--bg2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 12px; font-family: var(--sans); padding: 6px 8px; resize: vertical; min-height: 84px; }
-.bible-ta:focus { outline: none; border-color: var(--gold); }
-
-.cell-label { font-style: italic; font-size: 10px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
-
-.table-scroll { overflow-x: auto; border-radius: 10px; }
-.bible-table { min-width: 1250px; }
-.bible-table tr.sub-row td { border-top: 1px dashed var(--line); }
-
-.fb-cell { min-width: 220px; }
-.fb-list { max-height: 60px; overflow-y: auto; margin-bottom: 5px; font-size: 11px; color: var(--mut); }
-.fb-item { background: var(--bg2); border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; }
-.fb-time { font-size: 9px; color: var(--mut); }
-.fb-row { display: flex; gap: 5px; }
-.fb-input { flex: 1; background: var(--bg2); border: 1px solid var(--line); border-radius: 4px; color: var(--text); font-size: 11px; font-family: var(--sans); padding: 5px 7px; resize: none; min-height: 26px; }
-.fb-input:focus { outline: none; border-color: var(--ok); }
-.fb-send { background: var(--ok); color: #fff; border: 0; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
-.fb-send:hover { filter: brightness(1.15); }
-
-.empty-row td { color: var(--mut); text-align: center; padding: 26px; }
-.lightbox { display: none; position: fixed; z-index: 999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.95); align-items: center; justify-content: center; }
-.lightbox.active { display: flex; }
-.lightbox img { max-width: 95%; max-height: 95%; border-radius: 8px; }
-.lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 36px; cursor: pointer; }
+/* The assets page has no focus-mode sections — never render the focus-mode
+   chrome (the floating "− Show all sections" chip / edge bars) even if a
+   focus-* class was persisted in localStorage from the gallery page. */
+#resetChip, .edge-bar { display:none !important; }
 </style>
 </head>
-<body>
-<div id="theme-toggle" onclick="toggleTheme()" title="Toggle light / dark mode">🌙</div>
-<script>
-(function(){var t=localStorage.getItem('aio-theme');if(t==='light'){document.documentElement.classList.add('light');var b=document.getElementById('theme-toggle');if(b)b.textContent='☀️'}})();
-function toggleTheme(){var h=document.documentElement;h.classList.toggle('light');var l=h.classList.contains('light');localStorage.setItem('aio-theme',l?'light':'dark');document.getElementById('theme-toggle').textContent=l?'☀️':'🌙'}
-</script>
+<body class="fab-lift">
+
+<div class="header">
+  <a class="brand" href="/projects" title="AI Film Studio">AI Film Studio</a>
+  <a href="{{ '/s/' + season.id if season else '/projects' }}" class="back">‹ {{ 'Season' if season else 'Projects' }}</a>
+  <h1>Character Bible &amp; Assets</h1>
+  <span class="spacer"></span>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle appearance">🌙</button>
+</div>
+
 <div class="wrap">
-  <div class="header">
-    <a href="{{ '/s/' + season.id if season else '/projects' }}" class="back">← {{ 'Season' if season else 'Gallery' }}</a>
-    <h1>Character Bible &amp; Assets</h1>
-  </div>
-  <div class="subtitle">{{ scope_title }} — the agent uploads characters, locations, props and voices here. Leave feedback to request changes.</div>
+  <div class="subtitle">{{ scope_title }} — the agent uploads characters, locations, props and voices here. Expand a row to review; use “Talk to your agent” to request changes.</div>
 
   {% set chars = assets|selectattr('type', 'equalto', 'Character')|list %}
   {% set others = assets|rejectattr('type', 'equalto', 'Character')|list %}
 
-  <h2>Character Bible <span class="count">({{ chars|length }})</span></h2>
-  <div class="table-scroll">
-  <table class="bible-table">
-    <tr><th>Character</th></tr>
-    {% for a in chars %}
-    <tr>
-      <td rowspan="2"><strong>{{ a.name }}</strong></td>
-      <td>
-        <div class="cell-label">Appearance</div>
-        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="appearance" onchange="autoSave(this)" placeholder="Appearance">{{ a.appearance }}</textarea>
-      </td>
-      <td>
-        <div class="cell-label">Personality &amp; Backstory</div>
-        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="personality" onchange="autoSave(this)" placeholder="Personality & backstory">{{ a.personality }}</textarea>
-      </td>
-      <td>
-        <div class="cell-label">Distinguishing Features</div>
-        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="distinguishing" onchange="autoSave(this)" placeholder="Distinguishing features">{{ a.distinguishing }}</textarea>
-      </td>
-      <td>
-        <div class="cell-label">Reference</div>
-        <div class="thumb">
-          {% for im in a.images %}<img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im }}" onclick="openLightbox(this.src)" alt="{{ a.name }}">
-          {% else %}<span class="muted">—</span>{% endfor %}
-        </div>
-      </td>
-      <td rowspan="2">
-        <div class="cell-label">Status</div>
-        {% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% else %}<span class="muted">—</span>{% endif %}
-      </td>
-      <td rowspan="2" class="fb-cell">
-        <div class="cell-label">Feedback to agent</div>
-        <div class="fb-list" id="fb-{{ a.id }}">
-          {% for fb in a.feedback[-2:] %}
-          <div class="fb-item"><span class="fb-time">{{ fb.timestamp[:10] }}</span> {{ fb.text }}</div>
-          {% else %}
-          <div class="muted">No feedback yet</div>
-          {% endfor %}
-        </div>
-        <div class="fb-row">
-          <textarea class="fb-input" id="fbi-{{ a.id }}" rows="1" placeholder="Feedback..."></textarea>
-          <button class="fb-send" onclick="sendFeedback('{{ scope_id }}','{{ a.id }}')">Send</button>
-        </div>
-      </td>
-    </tr>
-    <tr class="sub-row">
-      <td>
-        <div class="cell-label">Wardrobe / Style</div>
-        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="wardrobe" onchange="autoSave(this)" placeholder="Palette, silhouette, texture">{{ a.wardrobe }}</textarea>
-      </td>
-      <td>
-        <div class="cell-label">Emotional Range</div>
-        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="emotional_range" onchange="autoSave(this)" placeholder="Emotional range cards">{{ a.emotional_range }}</textarea>
-      </td>
-      <td>
-        <div class="cell-label">Body Language Profile</div>
-        <textarea class="bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="body_language" onchange="autoSave(this)" placeholder="Body language profile">{{ a.body_language }}</textarea>
-      </td>
-      <td>
-        <div class="cell-label">Voice</div>
-        {% for au in a.audios %}<audio controls preload="none" style="max-width:200px;height:28px;display:block;margin-bottom:4px;"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ au }}"></audio>
-        {% else %}<span class="muted">{{ a.voice or '—' }}</span>{% endfor %}
-      </td>
-    </tr>
-    {% else %}
-    <tr class="empty-row"><td colspan="7">No characters yet — the agent uploads them here after you approve the concept.</td></tr>
-    {% endfor %}
-  </table>
+  <div class="bulk-row">
+    <button class="pill ghost" onclick="document.querySelectorAll('.asset').forEach(a=>a.classList.add('open'))">Expand all</button>
+    <button class="pill ghost" onclick="document.querySelectorAll('.asset').forEach(a=>a.classList.remove('open'))">Collapse all</button>
   </div>
 
-  <h2>Location Scenes and Props <span class="count">({{ others|length }})</span></h2>
-  <table>
-    <tr><th>Type</th><th>Name</th><th>Preview</th><th>Prompt</th><th>Status</th><th>Feedback</th></tr>
-    {% for a in others %}
-    <tr>
-      <td>{% if a.type %}<span class="status">{{ a.type }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
-      <td><strong>{{ a.name }}</strong></td>
-      <td>
-        <div class="thumb">
-          {% for im in a.images %}<img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im }}" onclick="openLightbox(this.src)" alt="{{ a.name }}">
-          {% else %}<span class="muted">—</span>{% endfor %}
-          {% for au in a.audios %}<audio controls preload="none"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ au }}"></audio>
-          {% endfor %}
+  <h2>Character Bible <span class="count">({{ chars|length }})</span></h2>
+  {% for a in chars %}
+  <section class="asset card" id="asset-{{ a.id }}" data-asset="{{ a.id }}">
+    <button class="asset-head" onclick="toggleAsset(this)">
+      {% if a.image %}<img class="asset-avatar" src="/a/{{ scope_id }}/{{ a.id }}/file/{{ a.image|urlencode }}" alt="{{ a.name }}">{% endif %}
+      <span>
+        <span class="asset-name">{{ a.name }}</span>
+        <span class="asset-meta">{{ a.role or a.type or 'Character' }}{% if a.voice %} · voice ref{% endif %}</span>
+      </span>
+      <span class="asset-summary">
+        {% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% endif %}
+        {% if a.images|length > 1 %}<span class="status">{{ a.images|length }} refs</span>{% endif %}
+        <span class="icon-btn plus" title="Expand {{ a.name }}">+</span>
+        <span class="icon-btn minus" title="Collapse {{ a.name }}">−</span>
+      </span>
+    </button>
+    <div class="asset-body"><div class="asset-body-inner">
+      <div class="bible-grid">
+        <div>
+          <div class="cell-label">Appearance</div>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="appearance" onchange="autoSaveAsset(this)" placeholder="Appearance">{{ a.appearance }}</textarea>
         </div>
-      </td>
-      <td><textarea class="prompt-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="prompt" onchange="autoSave(this)" placeholder="Prompt">{{ a.prompt }}</textarea></td>
-      <td>{% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
-      <td class="fb-cell">
-        <div class="fb-list" id="fb-{{ a.id }}">
-          {% for fb in a.feedback[-2:] %}
-          <div class="fb-item"><span class="fb-time">{{ fb.timestamp[:10] }}</span> {{ fb.text }}</div>
+        <div>
+          <div class="cell-label">Personality &amp; Backstory</div>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="personality" onchange="autoSaveAsset(this)" placeholder="Personality &amp; backstory">{{ a.personality }}</textarea>
+        </div>
+        <div>
+          <div class="cell-label">Distinguishing Features</div>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="distinguishing" onchange="autoSaveAsset(this)" placeholder="Distinguishing features">{{ a.distinguishing }}</textarea>
+        </div>
+        <div>
+          <div class="cell-label">Wardrobe / Style</div>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="wardrobe" onchange="autoSaveAsset(this)" placeholder="Palette, silhouette, texture">{{ a.wardrobe }}</textarea>
+        </div>
+        <div>
+          <div class="cell-label">Emotional Range</div>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="emotional_range" onchange="autoSaveAsset(this)" placeholder="Emotional range cards">{{ a.emotional_range }}</textarea>
+        </div>
+        <div>
+          <div class="cell-label">Body Language Profile</div>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="body_language" onchange="autoSaveAsset(this)" placeholder="Body language profile">{{ a.body_language }}</textarea>
+        </div>
+        <div>
+          <div class="cell-label">Character Sheet Prompt</div>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="character_sheet_prompt" onchange="autoSaveAsset(this)" placeholder="FLUX 2 4-view character sheet prompt (framework: ai-film-character-set-design skill)">{{ a.character_sheet_prompt }}</textarea>
+        </div>
+        <div>
+          <div class="cell-label">Reference Voice Prompt</div>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="voice_prompt" onchange="autoSaveAsset(this)" placeholder="Voice direction / TTS prompt (if applicable)">{{ a.voice_prompt }}</textarea>
+        </div>
+      </div>
+      <div class="asset-row2">
+        <div>
+          <div class="cell-label">Reference Images</div>
+          <div class="strip">
+            {% for im in a.images %}
+            <div class="thumb {{ 'sel' if im == a.primary_image else '' }}" style="cursor:zoom-in" onclick="openLightbox('/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}')">
+              <img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}" alt="{{ a.name }}" title="{{ im }}">
+              <button class="star {{ 'on' if im == a.primary_image else '' }}" title="✓ use this one (approved)" onclick="event.stopPropagation();selectAssetMedia('{{ scope_id }}','{{ a.id }}','{{ im }}',this.parentElement)">★</button>
+            </div>
+            {% else %}
+            <span style="color:var(--mut);font-size:12px;">No reference images yet.</span>
+            {% endfor %}
+          </div>
+          {% if a.prompt %}
+          <div class="cell-label" style="margin-top:12px;">Prompt</div>
+          <textarea class="ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="prompt" onchange="autoSaveAsset(this)" placeholder="Prompt" style="min-height:90px">{{ a.prompt }}</textarea>
+          {% endif %}
+        </div>
+        <div>
+          <div class="cell-label">Reference Voice</div>
+          {% for au in a.audios %}
+          <audio class="voice" controls preload="none"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ au|urlencode }}"></audio>
           {% else %}
-          <div class="muted">No feedback yet</div>
+          <span style="color:var(--mut);font-size:12px;">{{ a.voice or 'No voice reference yet.' }}</span>
           {% endfor %}
+          {% if a.feedback %}
+          <div class="cell-label" style="margin-top:12px;">Agent feedback history</div>
+          <div class="fb-history acc open">
+            {% for fb in a.feedback[-4:] %}
+            <div class="msg sys" style="align-self:flex-start;">{{ fb.timestamp[:10] }} — {{ fb.text }}</div>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
-        <div class="fb-row">
-          <textarea class="fb-input" id="fbi-{{ a.id }}" rows="1" placeholder="Feedback..."></textarea>
-          <button class="fb-send" onclick="sendFeedback('{{ scope_id }}','{{ a.id }}')">Send</button>
+      </div>
+    </div></div>
+  </section>
+  {% else %}
+  <div class="card" style="padding:26px;text-align:center;color:var(--mut);">No characters yet — the agent uploads them here after you approve the concept.</div>
+  {% endfor %}
+
+  <h2>Location Scenes and Props <span class="count">({{ others|length }})</span></h2>
+  {% for a in others %}
+  <section class="asset card" id="asset-{{ a.id }}" data-asset="{{ a.id }}">
+    <button class="asset-head" onclick="toggleAsset(this)">
+      {% if a.image %}<img class="asset-avatar" src="/a/{{ scope_id }}/{{ a.id }}/file/{{ a.image|urlencode }}" alt="{{ a.name }}">{% endif %}
+      <span>
+        <span class="asset-name">{{ a.name }}</span>
+        <span class="asset-meta">{{ a.type or 'Asset' }}</span>
+      </span>
+      <span class="asset-summary">
+        {% if a.status %}<span class="status {{ a.status|lower }}">{{ a.status }}</span>{% endif %}
+        <span class="icon-btn plus" title="Expand {{ a.name }}">+</span>
+        <span class="icon-btn minus" title="Collapse {{ a.name }}">−</span>
+      </span>
+    </button>
+    <div class="asset-body"><div class="asset-body-inner">
+      <div class="asset-row2">
+        <div>
+          <div class="cell-label">Reference Images</div>
+          <div class="strip">
+            {% for im in a.images %}
+            <div class="thumb {{ 'sel' if im == a.primary_image else '' }}" style="cursor:zoom-in" onclick="openLightbox('/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}')">
+              <img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}" alt="{{ a.name }}" title="{{ im }}">
+              <button class="star {{ 'on' if im == a.primary_image else '' }}" title="✓ use this one (approved)" onclick="event.stopPropagation();selectAssetMedia('{{ scope_id }}','{{ a.id }}','{{ im }}',this.parentElement)">★</button>
+            </div>
+            {% else %}
+            <span style="color:var(--mut);font-size:12px;">No reference images yet.</span>
+            {% endfor %}
+            {% for au in a.audios %}
+            <audio class="voice" controls preload="none"><source src="/a/{{ scope_id }}/{{ a.id }}/file/{{ au|urlencode }}"></audio>
+            {% endfor %}
+          </div>
+          <div class="cell-label" style="margin-top:12px;">Prompt</div>
+          <textarea class="ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="prompt" onchange="autoSaveAsset(this)" placeholder="Prompt" style="min-height:110px">{{ a.prompt }}</textarea>
         </div>
-      </td>
-    </tr>
-    {% else %}
-    <tr class="empty-row"><td colspan="6">No assets yet — the agent uploads locations, props and voices here for your review.</td></tr>
-    {% endfor %}
-  </table>
+        <div>
+          {% if a.description %}
+          <div class="cell-label">Description</div>
+          <textarea class="ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="description" onchange="autoSaveAsset(this)" placeholder="Description" style="min-height:90px">{{ a.description }}</textarea>
+          {% endif %}
+          {% if a.feedback %}
+          <div class="cell-label" style="margin-top:12px;">Agent feedback history</div>
+          <div class="fb-history acc open">
+            {% for fb in a.feedback[-4:] %}
+            <div class="msg sys" style="align-self:flex-start;">{{ fb.timestamp[:10] }} — {{ fb.text }}</div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div></div>
+  </section>
+  {% else %}
+  <div class="card" style="padding:26px;text-align:center;color:var(--mut);">No assets yet — the agent uploads locations, props and voices here for your review.</div>
+  {% endfor %}
 </div>
 
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <span class="lightbox-close">&times;</span>
-  <img id="lightbox-img">
-</div>
-
+{% include '_studio_ui.html' %}
+<script src="{{ url_for('static', filename='studio.js') }}?v=7"></script>
 <script>
-function autoSave(el) {
+function toggleAsset(head) {
+  head.closest('.asset').classList.toggle('open');
+}
+function autoSaveAsset(el) {
   const fd = new FormData();
   fd.append('field', el.dataset.field);
   fd.append('value', el.value);
   fetch('/a/' + el.dataset.project + '/' + el.dataset.asset + '/update', { method: 'POST', body: fd }).catch(() => {});
 }
-function sendFeedback(project, asset) {
-  const el = document.getElementById('fbi-' + asset);
-  const text = el.value.trim();
-  if (!text) return;
-  el.disabled = true;
-  const fd = new FormData();
-  fd.append('text', text);
-  fetch('/a/' + project + '/' + asset + '/feedback', { method: 'POST', body: fd })
-  .then(r => r.json())
-  .then(d => {
-    if (d.ok) {
-      const list = document.getElementById('fb-' + asset);
-      if (list.children.length === 1 && list.children[0].classList.contains('muted')) list.innerHTML = '';
-      const item = document.createElement('div');
-      item.className = 'fb-item';
-      item.innerHTML = '<span class="fb-time">just now</span> ' + text;
-      list.appendChild(item);
-      el.value = '';
-    }
-  })
-  .finally(() => { el.disabled = false; el.focus(); });
-}
-function openLightbox(src) {
-  document.getElementById('lightbox-img').src = src;
-  document.getElementById('lightbox').classList.add('active');
-}
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('active');
-}
+/* Drawer context: explicit clicks only (see studio.js) */
+studioInitContextCapture({ project: {{ scope_id|tojson }} });
+/* Deep link: /a/<scope>#<asset-id> expands that asset */
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.location.hash) {
+    const el = document.getElementById('asset-' + window.location.hash.slice(1));
+    if (el) { el.classList.add('open'); el.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  }
+});
 </script>
 </body>
 </html>
