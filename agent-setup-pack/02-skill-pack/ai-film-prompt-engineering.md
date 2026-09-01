@@ -1,18 +1,18 @@
 ---
 name: ai-film-prompt-engineering
-description: "Prompt craft for AI film production on fal.ai: FLUX image prompts (JSON-structured, HEX colors, @tag references), MiniMax H3 Max video prompts (motion-only, dialogue in quotes, soundscape), and the rules that keep characters consistent."
+description: "Prompt craft for AI film production on fal.ai: GPT Image 2 image prompts (structured, 3-panel landscape character sheets, @tag references), MiniMax H3 Max video prompts (motion-only, dialogue in quotes, soundscape), and the rules that keep characters consistent."
 version: 3.0.0
 author: Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [film, prompts, fal-ai, flux, minimax, prompting]
+    tags: [film, prompts, fal-ai, gpt-image-2, minimax, prompting]
     related_skills: [ai-film-pipeline, ai-film-keyframe-authoring, ai-film-cinematography, fal-ai-ops]
 ---
 
 # AI Film Prompt Engineering (fal.ai stack)
 
-*Use when: writing any generation prompt — image (FLUX) or video (MiniMax H3
+*Use when: writing any generation prompt — image (GPT Image 2) or video (MiniMax H3
 Max). The rules below are the ones that actually move quality.*
 
 ## The non-negotiable rules
@@ -41,21 +41,37 @@ Use case: [editorial photo / product mockup / concept frame]
 Constraints: [no watermark / no logos / no extra text / preserve face / preserve layout]
 ```
 
-**Asset templates (see the character-set-design skill):** character sheet =
-two-panel (face close-up + full-body front/back) on neutral grey, "avoid
-polished or symmetrical features", ONE face; location = 3/4-angle cinematic
-still, empty of people, motivated lighting; prop = white-background product
-sheet, front + 3/4 views, no text.
+### Asset templates (see the character-set-design skill)
 
-**Keyframes** (`openai/gpt-image-2/edit`): upload the reference images as
-`image_urls`, describe the composition ("the woman from the first reference
-image, in the cafe from the second reference image"); optional mask for
-surgical edits.
+- **Character sheet = 3-panel, landscape (1536×1024), ONE face.** Plain neutral
+  gray (#e0e0e0) backdrop; equal-width panels — face+shoulders close-up,
+  full-body front (A-pose), full-body back (same pose as center). Photorealism
+  vocabulary (camera/lens/lighting/skin-texture/material language beats vague
+  "quality" adjectives): full-frame DSLR 85mm f/2.8, soft three-point studio
+  light, visible skin pores, named real materials. Avoid
+  "hyperrealistic / ultra realistic / 8K / flawless". No text/labels/watermarks,
+  no inconsistent proportions, no background props.
+- **Location / setting:** **4-panel sheet, 16:9 landscape (1536×864)**, locked
+  lighting/time-of-day. Wide establishing (top-left, largest) + alternate wide
+  ~90° (top-right) + corner depth (bottom-left) + detail shot of a key feature
+  (bottom-right). No people, environment only, consistent lighting across panels.
+  Add spatial dimensions (e.g. "a room roughly 4m × 6m") to help the model
+  reconcile the angles.
+- **Prop:** **4-panel grid, neutral gray (#e0e0e0)**, studio lighting, no cast
+  shadows, consistent scale. Front + side (90°) + back + close-up detail
+  (texture/material/functional details). No hands, no scene context, no text labels.
 
-**LEGACY — FLUX prompting (pre-GPT Image 2):** natural-language Subject +
-Action + Style + Context, JSON structured prompts, `@image1`–`@image9`
-reference tags, HEX colors. Official rules in `flux-prompting`. Do not use
-FLUX structure for GPT Image 2 prompts.
+### Keyframes (`openai/gpt-image-2/edit`)
+
+Upload the reference images as `image_urls`, describe the composition ("the
+woman from the first reference image, in the cafe from the second reference
+image"); optional mask for surgical edits. First frames are generated at
+**high quality** for best clips.
+
+> **LEGACY — FLUX prompting (pre-GPT Image 2):** natural-language Subject +
+> Action + Style + Context, JSON structured prompts, `@image1`–`@image9`
+> reference tags, HEX colors. Official rules in `flux-prompting`. Do not use
+> FLUX structure for GPT Image 2 prompts.
 
 ## Video prompts (MiniMax H3 Max)
 
@@ -105,4 +121,4 @@ look broken.
 7. Clips 3–6 seconds
 
 See also: `ai-film-keyframe-authoring` (first-frame prompts), `fal-ai-ops`
-(generation commands), and the Prompt & Template Pack on the Downloads page.
+(generation commands), and the Prompt & Template Pack.

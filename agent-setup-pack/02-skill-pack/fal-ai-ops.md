@@ -37,9 +37,9 @@ error means the key works. To see any model's exact flags:
 
 | Job | Model | Default settings |
 |---|---|---|
-| Character reference sheets | `openai/gpt-image-2` | `--image_size '{"width":1024,"height":1536}'`, `--quality high`, `--output_format png` |
-| Location & prop reference images | `openai/gpt-image-2` | `--image_size '{"width":1024,"height":768}'`, `--quality medium`, `--output_format png` |
-| First-frame edits (keyframes) | `openai/gpt-image-2/edit` | `--image_urls <refs>`, `--image_size auto`, `--quality medium` |
+| Character reference sheets | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":1024}'`, `--quality high`, `--output_format png` |
+| Location & prop reference images | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":864}'`, `--quality medium`, `--output_format png` |
+| First-frame edits (keyframes) | `openai/gpt-image-2/edit` | `--image_urls <refs>`, `--image_size auto`, `--quality high` |
 | Video clips (with sound) | `minimax/h3-max/image-to-video` | `--duration 5`, `--resolution 768P`, `--prompt_expansion_mode balanced` |
 | Upscaler (masters) | `fal-ai/bytedance-upscaler/upscale/video` | `--target_resolution 4k`, `--enhancement_preset aigc` |
 
@@ -48,13 +48,13 @@ error means the key works. To see any model's exact flags:
 ```bash
 genmedia run openai/gpt-image-2 \
   --prompt "<structured prompt — see templates below>" \
-  --image_size '{"width":1024,"height":1536}' --quality high --output_format png --download
+  --image_size '{"width":1536,"height":1024}' --quality high --output_format png --download
 ```
 
 **Structured prompt format:** `Scene:` / `Subject:` / `Important details:` / `Use case:` / `Constraints:`
-**Character sheet (two-panel, ONE face):** seamless neutral grey backdrop; left panel facial close-up, right panel full-body front+back; describe the character as realistic and unpolished — "avoid conventionally polished or symmetrical features"; after generating, erase the face from the full-body panel so the video model sees ONE face; if the sheet is edited for outfits, paste the original 100%-quality face back over the edited face (every edit degrades skin detail).
-**Location:** cinematic still from a **3/4 angle**, completely empty of people, motivated lighting, environmental detail.
-**Prop:** product sheet on pure white background (soft contact shadow only), front + 3/4 views side by side, no text/labels/watermarks.
+**Character sheet (three-panel, landscape, ONE face):** plain neutral gray (#e0e0e0) backdrop, equal-width 3-panel horizontal sheet: Panel 1 face+shoulders close-up (front, neutral), Panel 2 full-body front (A-pose), Panel 3 full-body back (same pose as center); landscape 1536x1024. Use photographic vocabulary (full-frame DSLR 85mm f/2.8, soft three-point studio light, visible skin texture/pores, individual hair strands, real materials). Describe the character as realistic and unpolished — "avoid conventionally polished or symmetrical features". Do NOT include text labels, watermarks, inconsistent proportions, or background props.
+**Location:** **4-panel sheet, 16:9 landscape** — wide establishing + alternate wide (~90°) + corner depth + detail shot; locked lighting/time-of-day, no people, environment only. (Full template in character-set-design skill.)
+**Prop:** **4-panel grid, neutral gray (#e0e0e0)** — front + side (90°) + back + close-up detail; studio lighting, no cast shadows, consistent scale, no text labels.
 
 ### First-frame edit (keyframes) — GPT Image 2 edit
 
@@ -65,7 +65,7 @@ genmedia upload /opt/data/studio/assets/<season>/<asset>/<file>.png
 # → prints a cdn_url like https://v3b.fal.media/files/b/...
 genmedia run openai/gpt-image-2/edit \
   --prompt "<composition prompt: put the subject from image 1 in the setting from image 2…>" \
-  --image_urls "<cdn_url_1>,<cdn_url_2>" --image_size auto --quality medium --output_format png --download
+  --image_urls "<cdn_url_1>,<cdn_url_2>" --image_size auto --quality high --output_format png --download
 ```
 
 (`--image_size auto` keeps the reference dimensions; keep the output 768p-class (1344×768) so MiniMax H3 Max gets a perfectly sized first frame. Optional `mask_image_url`: white = editable, black = preserved.)
@@ -101,7 +101,7 @@ the owner stores in `/opt/data/studio/masters/<film>/`.)
 
 Generation costs the owner real money **per successful output** (roughly
 US$0.17 per character sheet at high quality, US$0.04 per location or prop at
-medium, US$0.05 per keyframe, ~US$0.40 per 5-second clip at 768p, ~US$0.14 per 4K
+medium, US$0.15 per keyframe, ~US$0.40 per 5-second clip at 768p, ~US$0.14 per 4K
 upscale — check `genmedia pricing <model-id>` for live rates).
 
 - **Never start a paid batch without asking first.** Message the owner on
