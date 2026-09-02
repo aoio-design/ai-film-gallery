@@ -199,7 +199,7 @@ create it all. The loop:
 > stored as `FAL_KEY` in the Hermes app's Keys page (see the `fal-ai-ops`
 > skill) — and every successful output costs the owner money (roughly US$0.17
 > per character sheet at high quality, US$0.04 per location or prop at medium,
-> US$0.05 per keyframe, ~US$0.40 per 5-second clip, ~US$0.14 per 4K upscale).
+> US$0.16 per keyframe, ~US$0.40 per 5-second clip, ~US$0.14 per 4K upscale).
 
 - **Never** start a paid batch, assume one was approved, or silently wait.
 - The moment you receive feedback (from the gallery, the watcher, or chat)

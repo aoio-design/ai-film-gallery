@@ -1,6 +1,6 @@
 ---
 name: ai-film-keyframe-authoring
-description: "Authoring first-frame keyframe prompts for AI film shots: the frozen moment, @tag references, camera spec, exposure, movement language, timing and per-shot asset loading (fal.ai FLUX 2 pro edit)."
+description: "Authoring first-frame keyframe prompts for AI film shots: the frozen moment, @tag references, camera spec, exposure, movement language, timing and per-shot asset loading (fal.ai GPT Image 2 edit)."
 version: 3.0.0
 author: Hermes Agent
 license: MIT
@@ -85,37 +85,33 @@ over-shoulder / insert / POV.
 - Day-lit exterior: underexposed 0.5 stops "for mood" — never apply night
   defaults to day scenes
 
-## Timing (3–6 second shots)
+## Timing (H3 Max clips: 5–15 seconds — plan 5–6s)
 
-- 3s — quick reaction, cutaway, insert
-- 4s — standard action, medium shot
-- 5s — dialogue line, character moment
-- 6s — establishing shot, reveal, dramatic hold
+H3 Max's minimum clip length is **5 seconds** (maximum 15) — never plan a
+shorter clip.
+
+- 5s — quick reaction, cutaway, insert, dialogue line
+- 6s — standard action, character moment
+- 6–10s — establishing shot, reveal, dramatic hold
 
 Durations are earned, not assigned to fill time. Dialogue pacing ≈ 3–4 words
-per second: a 35–40 word paragraph is ~9–10s — too long for one clip. Split
-it into a multi-shot sequence (speaker close-up → reaction/insert cutaway →
-speaker finish) and let the line carry across the cutaways.
+per second: a 35–40 word paragraph is ~9–10s — a long single clip. Prefer
+splitting it into a multi-shot sequence (speaker close-up → reaction/insert
+cutaway → speaker finish) and let the line carry across the cutaways.
 
-## Per-shot asset loading (fal.ai — FLUX 2 pro edit)
+## Per-shot asset loading (fal.ai — GPT Image 2 edit)
 
-FLUX 2 pro edit accepts **up to 9 reference images** in one request. The
-`@image1`–`@image9` tags in the prompt refer to the images **in the order you
-upload them** for that run — there is no fixed global map. The typical
-keyframe call uploads two: the character sheet and the location image.
+`openai/gpt-image-2/edit` accepts **up to 16 reference images** (`image_urls`)
+in one request. The composition prompt describes how the references combine —
+put the character from one reference into the setting from another. The
+typical keyframe call uploads two: the character sheet and the location image.
 
-```
-SHOT N — [description]
-  Image 1: [character sheet file]     → referenced as @image1
-  Image 2: [location image file]      → referenced as @image2
-  Prompt:  "[CHARACTER] from @image1 in the setting from @image2, [frozen
-           moment]…" (or use the @TAG names directly — the model understands
-           both)
-```
+Render every keyframe at a **fixed 1920×1080 (16:9)**, quality high — the frame
+is supersampled above H3 Max's native 1344×768 canvas so the video model
+downsamples clean detail (exact command: see the `fal-ai-ops` skill).
 
-Write the loading spec per shot before queueing, then verify the generated
-image actually contains the right character and place before generating video
-— a wrong keyframe wastes a paid video clip.
+Verify the generated image actually contains the right character and place
+before generating video — a wrong keyframe wastes a paid video clip.
 
 ## Reference
 

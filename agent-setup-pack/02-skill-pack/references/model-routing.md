@@ -19,7 +19,7 @@ binding is living data** ("which model" changes — and appends instead of overr
 
 > **The one living rule: the selected VIDEO model owns the frame aspect ratio (and whether a
 > first-last frame pair is required).** The keyframe stage reads the video binding BEFORE emitting
-> frame dimensions. Today that's H3 Max ⇒ single 1344×768 first frame. If the project's video
+> frame dimensions. Today that's H3 Max ⇒ single 1920×1080 (16:9) first frame (supersampled; the model downsamples to its 1344×768 canvas). If the project's video
 > binding wants other dims or a frame pair, the keyframe stage re-derives from it.
 
 ## Binding scope — precedence (resolved highest → lowest at generation time)

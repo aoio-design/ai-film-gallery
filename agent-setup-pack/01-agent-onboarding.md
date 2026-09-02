@@ -116,7 +116,7 @@ defaults, not the number to quote.
 >
 > The fal.ai spending rule, which you must never break: every successful
 > generation costs me money (about US$0.17 per character sheet at high
-> quality, US$0.04 per location or prop, US$0.05 per keyframe, US$0.40 per
+> quality, US$0.04 per location or prop, US$0.16 per keyframe, US$0.40 per
 > 5-second clip, US$0.04–0.14 per upscale). Never start a paid batch yourself, never
 > assume one was approved, and never sit silently waiting. As soon as you get
 > feedback that needs generation, message me on Telegram or WhatsApp and ask

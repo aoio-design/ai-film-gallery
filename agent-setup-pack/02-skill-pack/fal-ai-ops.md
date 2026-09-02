@@ -39,9 +39,9 @@ error means the key works. To see any model's exact flags:
 |---|---|---|
 | Character reference sheets | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":1024}'`, `--quality high`, `--output_format png` |
 | Location & prop reference images | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":864}'`, `--quality medium`, `--output_format png` |
-| First-frame edits (keyframes) | `openai/gpt-image-2/edit` | `--image_urls <refs>`, `--image_size auto`, `--quality high` |
+| First-frame edits (keyframes) | `openai/gpt-image-2/edit` | `--image_urls <refs>`, `--image_size '{"width":1920,"height":1080}'`, `--quality high` |
 | Video clips (with sound) | `minimax/h3-max/image-to-video` | `--duration 5`, `--resolution 768P`, `--prompt_expansion_mode balanced` |
-| Upscaler (masters) | `fal-ai/bytedance-upscaler/upscale/video` | `--target_resolution 4k`, `--enhancement_preset aigc` |
+| Upscaler (masters) | `fal-ai/bytedance-upscaler/upscale/video` | `--target_resolution 4k`, `--enhancement_preset aigc`, `--target_fps 24` |
 
 ### Reference image — text to image (GPT Image 2)
 
@@ -65,10 +65,10 @@ genmedia upload /opt/data/studio/assets/<season>/<asset>/<file>.png
 # → prints a cdn_url like https://v3b.fal.media/files/b/...
 genmedia run openai/gpt-image-2/edit \
   --prompt "<composition prompt: put the subject from image 1 in the setting from image 2…>" \
-  --image_urls "<cdn_url_1>,<cdn_url_2>" --image_size auto --quality high --output_format png --download
+  --image_urls "<cdn_url_1>,<cdn_url_2>" --image_size '{"width":1920,"height":1080}' --quality high --output_format png --download
 ```
 
-(`--image_size auto` keeps the reference dimensions; keep the output 768p-class (1344×768) so MiniMax H3 Max gets a perfectly sized first frame. Optional `mask_image_url`: white = editable, black = preserved.)
+(Render keyframes at a **fixed 1920×1080 (16:9)** — supersampled above H3 Max's 768p-class canvas (1344×768) so the model downsamples clean detail. `image_urls` accepts up to 16 refs. Optional `mask_url`: white = editable, black = preserved.)
 
 ### Video clip (first frame → clip with sound)
 
@@ -79,6 +79,8 @@ genmedia run minimax/h3-max/image-to-video \
   --image_url "<cdn_url>" \
   --duration 5 --resolution 768P --prompt_expansion_mode balanced --download
 ```
+
+Feed the 1920×1080 keyframe from the edit stage as-is — H3 Max downsamples to its native 768p-class output (1344×768 @ 24 fps).
 
 Dialogue goes inside the prompt in quotes with a delivery tone
 (`NOVA says: "It's everything. The whole ledger." — tired, flat, quiet`).
@@ -91,17 +93,19 @@ and room sound baked in — there are no separate audio files.
 genmedia upload /opt/data/studio/shots/<film>/<shot>/video.mp4
 genmedia run fal-ai/bytedance-upscaler/upscale/video \
   --video_url "<cdn_url>" \
-  --target_resolution 4k --enhancement_preset aigc --download
+  --target_resolution 4k --enhancement_preset aigc --target_fps 24 --download
 ```
 
 (`--target_resolution 1080p` is the cheaper social option; 4K is the master
-the owner stores in `/opt/data/studio/masters/<film>/`.)
+the owner stores in `/opt/data/studio/masters/<film>/`. `--target_fps 24`
+matches H3 Max's 24 fps clips — the upscaler defaults to 30 fps and would
+otherwise re-time them.)
 
 ## The spending rule (MANDATORY — never break this)
 
 Generation costs the owner real money **per successful output** (roughly
 US$0.17 per character sheet at high quality, US$0.04 per location or prop at
-medium, US$0.15 per keyframe, ~US$0.40 per 5-second clip at 768p, ~US$0.14 per 4K
+medium, US$0.16 per keyframe, ~US$0.40 per 5-second clip at 768p, ~US$0.14 per 4K
 upscale — check `genmedia pricing <model-id>` for live rates).
 
 - **Never start a paid batch without asking first.** Message the owner on

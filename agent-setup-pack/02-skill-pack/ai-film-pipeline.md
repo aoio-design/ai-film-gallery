@@ -61,8 +61,9 @@ by the owner in their video editor.
   assets page (words only, free), then hand THAT back for approval too.
   Generation starts only after both gates pass. Skipping ahead wastes review
   time and spends money early.
-- **Spending rule.** Every successful generation bills the owner (~US$0.06
-  per image, ~US$0.40 per 5-second clip, ~US$0.14 per 4K upscale). Never
+- **Spending rule.** Every successful generation bills the owner (about US$0.17
+  per character sheet, US$0.04 per location or prop, US$0.16 per keyframe,
+  ~US$0.40 per 5-second clip at 768p, ~US$0.14 per 4K upscale). Never
   start a paid batch without asking on Telegram/WhatsApp ("shall I generate
   the N shots now? it'll cost about US$X"), check the balance first, report
   the actual cost when done. See `fal-ai-ops`.

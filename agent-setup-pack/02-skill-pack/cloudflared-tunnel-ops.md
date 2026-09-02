@@ -107,7 +107,7 @@ absent. Known-good example: `scripts/webui-tunnel-health.sh` in the gallery repo
 **Cron script-path quirk:** the cronjob tool validates script paths relative to
 `~/.hermes/scripts/` (rejects absolute paths), but the scheduler RUNNER resolves bare
 filenames under `/opt/data/scripts/` (observed: "Script not found:
-/opt/data/scripts/lfm-watchdog.sh" while the file sat in `~/.hermes/scripts/`).
+/opt/data/scripts/guide-health.sh" while the file sat in `~/.hermes/scripts/`).
 Keep every watchdog script in BOTH locations — copy after every edit.
 
 **A firing check can also FALSE-NEGATIVE.** Before restarting anything on a failed check, verify the check's port matches what the service actually serves on: read the ingress from `/opt/data/.cloudflared/config.yml` (`hostname → http://localhost:<PORT>`) and curl THAT port. A cron checking a stale port (e.g. 5001 after the service moved to 80) false-negatives every run; if the check's failure handler runs a start script, each false negative spawns another duplicate daemon/tunnel. Connection refused on the checked port + the service responding on the ingress port (or the public subdomain returning 302) = healthy, no action needed — report the check as stale rather than restarting.

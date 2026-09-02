@@ -66,16 +66,16 @@ profiles:
     model: openai/gpt-image-2/edit
     state: mapped
     default: true
-    accepts_refs: true           # image_urls (up to 9); optional mask_image_url for surgical edits
+    accepts_refs: true           # image_urls (up to 16); optional mask_url for surgical edits
     quality: high                # Lucas (Sep 1 2026): first frames at high quality (~$0.15) for better clips
-    cost: "~$0.15"
+    cost: "~$0.16"
     prompt_dialect: "composition-from-references: put subject from ref N into setting from ref M"
     quality_dialect: "same fidelity vocab as txt2img; CRITICAL: preserve the ONE face — the sheet's
       facial close-up must read as the character. mouth closed/neutral on dialogue shots."
-    dims: "auto (inherits output ~1344x768); MUST match the video binding's target AR"
+    dims: "1920x1080 fixed 16:9 (supersample ~1.4x; video binding downsamples to its 768p-class canvas)"
     frame_pair: false            # single first frame — unless the SELECTED video binding requires a pair
     source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
-    last_verified: "2026-08-31"
+    last_verified: "2026-09-02"
     verified_by: lucas
 
   - id: h3-max-video
@@ -88,10 +88,10 @@ profiles:
       detailed_description / overall_soundscape / non_diegetic_music). See minimax-h3-prompting."
     quality_dialect: "dialogue INSIDE quotes in the prompt with a delivery tone (model speaks + lip-syncs);
       one speaker per clip, lines <= 5s; soundscape stated explicitly; motion-only complement to the keyframe."
-    dims: "768p (1344x768 sweet spot); accepts exact first frame fed in as-is"
+    dims: "768P canvas = 1344x768 @ 24 fps; AR follows fed frame — feed the 1920x1080 keyframe as-is"
     frame_pair: false
     source_of_truth: ["https://fal.ai/models/minimax/h3-max", "https://platform.minimaxi.com"]
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-02"
     verified_by: lucas
 
   - id: bytedance-upscaler
@@ -100,11 +100,11 @@ profiles:
     model: fal-ai/bytedance-upscaler/upscale/video
     state: mapped
     default: true
-    params: { target_resolution: 4k, enhancement_preset: aigc }
+    params: { target_resolution: 4k, enhancement_preset: aigc, target_fps: 24 }
     prompt_dialect: none         # no prompt — param-driven
     dims: "upscales 1080p->4k"
     source_of_truth: ["https://fal.ai/models/fal-ai/bytedance-upscaler"]
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-02"
     verified_by: lucas
 
 # ────────────────────────────────────────────────────────────────────────────
