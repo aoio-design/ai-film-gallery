@@ -1,6 +1,6 @@
 ---
 name: ai-film-content-strategy
-description: "Content strategy for AI short films and micro-dramas. Covers platform-specific best practices (YouTube, TikTok, Instagram Reels), audience retention science, viral storytelling mechanics, AI film creator case studies, sci-fi content trends, and cross-platform distribution strategy — all optimized for a Singapore-based AI filmmaker."
+description: "Content strategy for AI short films and micro-dramas. Covers platform-specific best practices (YouTube, TikTok, Instagram Reels), audience retention science, viral storytelling mechanics, AI film creator case studies, sci-fi content trends, and cross-platform distribution strategy — all optimized for the independent AI filmmaker."
 version: 1.1.0
 author: Hermes Agent
 license: MIT
@@ -14,7 +14,7 @@ metadata:
 
 ## Overview
 
-Strategic guidance for turning AI-generated sci-fi short films into a growing audience across YouTube, TikTok, and Instagram Reels. This skill covers **what the algorithms favor**, **what keeps viewers watching**, **what makes content shareable**, and **how successful AI filmmakers are building audiences** — all optimized for a Singapore-based creator producing 30s–5min AI-generated sci-fi content.
+Strategic guidance for turning AI-generated sci-fi short films into a growing audience across YouTube, TikTok, and Instagram Reels. This skill covers **what the algorithms favor**, **what keeps viewers watching**, **what makes content shareable**, and **how successful AI filmmakers are building audiences** — all optimized for the independent creator producing 30s–5min AI-generated sci-fi content.
 
 **Core philosophy:** Algorithms change, but human psychology doesn't. Build your strategy on proven retention mechanisms, then adapt the platform tactics as algorithms evolve.
 
@@ -121,9 +121,9 @@ Strategic guidance for turning AI-generated sci-fi short films into a growing au
 | **Algorithm signal** | Watch time in first few seconds = strongest ranking signal |
 | **Audio** | Original AI soundtracks build brand identity. Trending sounds for broader reach on teasers |
 | **SEO** | Keywords in caption + spoken in voiceover + on-screen text in first few seconds |
-| **Hashtags** | 3-5 mix of broad + specific: `#SciFi #AIFilm #ShortFilm #Singapore #AIArt` |
+| **Hashtags** | 3-5 mix of broad + specific: `#SciFi #AIFilm #ShortFilm #AIArt` |
 
-**TikTok is your fastest growth platform** — pure interest graph means zero-follower virality is possible. +11.5% YoY Singapore growth. 34h/month engagement.
+**TikTok is your fastest growth platform** — pure interest graph means zero-follower virality is possible. AI sci-fi story content is one of the fastest-growing, highest-engagement categories on the platform (see the benchmarks above).
 
 ### Instagram Reels (15-30s Visual Punch)
 
@@ -294,7 +294,7 @@ Script the end to feed back into the beginning. No "thanks for watching" — bre
 | CTA | Watch next video | Comment/Subscribe | Follow/Comment | Save/Share/DM |
 | Frequency | 1-2x/week | 1-2x/day (release weeks) | 1/day (new) | 3-4x/week |
 
-### Posting Schedule (Singapore Time)
+### Weekly Posting Schedule
 
 | Day | YouTube | TikTok | Instagram Reels |
 |-----|---------|--------|-----------------|
@@ -338,23 +338,14 @@ Post 90% theme-related commentary (AI ethics, future of society, tech critique, 
 
 ---
 
-## Singapore-Specific Context
+## Local Market Context
 
-| Metric | Value |
-|--------|-------|
-| Internet penetration | 98.4% (5.78M users) |
-| Social media users | 5.33M (90.6% of population) |
-| Largest age bracket | 25-34 (20.3%) — your core sci-fi audience |
-| Daily video consumption | ~2.5 hours |
-| Mobile speed | 164.75 Mbps median |
+Platform reach, growth and engagement rates vary by country. Treat any country-level statistic as a starting point and verify it for **your** market:
 
-| Platform | Users (SG) | YoY Growth |
-|----------|-----------|------------|
-| YouTube | 5.33M | Mature |
-| TikTok (18+) | 3.80M | +11.5% |
-| Instagram | 3.35M | +9.8% |
-
-**Implications:** Singapore has near-universal high-speed mobile internet. The 25-34 bracket (your core sci-fi audience) is the largest demographic. TikTok is the fastest-growing platform with highest engagement (34h/month). YouTube reaches virtually everyone.
+- Look up current platform user numbers and growth for your country (DataReportal's annual Digital report is a reliable source)
+- Compare TikTok vs YouTube Shorts vs Instagram Reels engagement in your market — the fastest-growing platform differs by region
+- If your audience is global (common for AI-film content), optimise for reach across time zones rather than one local peak
+- Test posting times against your own analytics: the lunch/evening/weekend peaks above are a baseline, not a rule — your audience's actual activity window wins
 
 ---
 

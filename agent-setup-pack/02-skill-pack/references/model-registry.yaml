@@ -31,7 +31,7 @@ stages:                    # model-agnostic — the "what" never varies
   - video                  # clip with dialogue + sound
   - master                 # upscale to delivery resolution
 
-global_default:            # the frozen stack (unchanged unless Lucas names a model)
+global_default:            # the frozen stack (unchanged unless the studio owner names a model)
   reference_images: openai/gpt-image-2
   keyframe: openai/gpt-image-2/edit
   video: minimax/h3-max/image-to-video
@@ -57,8 +57,8 @@ profiles:
       NOT a global law: do not inherit this into another model's profile without its own verification."
     frame_pair: false
     source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
-    last_verified: "2026-08-31"
-    verified_by: lucas
+    last_verified: "2026-09-02"
+    verified_by: owner
 
   - id: gpt-image-2-edit
     stage: keyframe
@@ -67,8 +67,8 @@ profiles:
     state: mapped
     default: true
     accepts_refs: true           # image_urls (up to 16); optional mask_url for surgical edits
-    quality: high                # Lucas (Sep 1 2026): first frames at high quality (~$0.15) for better clips
-    cost: "~$0.16"
+    quality: high                # Owner (Sep 1 2026): first frames at high quality (~$0.15) for better clips
+    cost: "US$0.158 (1920x1080 high, fal table 2 Sep 2026)"
     prompt_dialect: "composition-from-references: put subject from ref N into setting from ref M"
     quality_dialect: "same fidelity vocab as txt2img; CRITICAL: preserve the ONE face — the sheet's
       facial close-up must read as the character. mouth closed/neutral on dialogue shots."
@@ -76,7 +76,7 @@ profiles:
     frame_pair: false            # single first frame — unless the SELECTED video binding requires a pair
     source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
     last_verified: "2026-09-02"
-    verified_by: lucas
+    verified_by: owner
 
   - id: h3-max-video
     stage: video
@@ -84,6 +84,7 @@ profiles:
     model: minimax/h3-max/image-to-video
     state: mapped
     default: true
+    cost: "US$0.08/s @ 768P (~US$0.40 per 5s) list"
     prompt_dialect: "H3 six-section block (subject_definitions / summary / retention_analysis /
       detailed_description / overall_soundscape / non_diegetic_music). See minimax-h3-prompting."
     quality_dialect: "dialogue INSIDE quotes in the prompt with a delivery tone (model speaks + lip-syncs);
@@ -92,7 +93,7 @@ profiles:
     frame_pair: false
     source_of_truth: ["https://fal.ai/models/minimax/h3-max", "https://platform.minimaxi.com"]
     last_verified: "2026-09-02"
-    verified_by: lucas
+    verified_by: owner
 
   - id: bytedance-upscaler
     stage: master
@@ -100,12 +101,13 @@ profiles:
     model: fal-ai/bytedance-upscaler/upscale/video
     state: mapped
     default: true
+    cost: "US$0.0072/s -> 1080p; US$0.0288/s -> 4K (a 5s clip ~US$0.04 / ~US$0.14)"
     params: { target_resolution: 4k, enhancement_preset: aigc, target_fps: 24 }
     prompt_dialect: none         # no prompt — param-driven
     dims: "upscales 1080p->4k"
     source_of_truth: ["https://fal.ai/models/fal-ai/bytedance-upscaler"]
     last_verified: "2026-09-02"
-    verified_by: lucas
+    verified_by: owner
 
 # ────────────────────────────────────────────────────────────────────────────
 # RECOGNIZED-UNMAPPED — prior art exists (skills/notes) but NO verified binding yet.
