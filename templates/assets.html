@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Character Bible &amp; Assets — {{ scope_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=7">
+<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=10">
 <style>
 body { padding:0; }
 .header {
@@ -154,7 +154,7 @@ audio.voice {
         </div>
         <div>
           <div class="cell-label">Character Sheet Prompt</div>
-          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="character_sheet_prompt" onchange="autoSaveAsset(this)" placeholder="FLUX 2 4-view character sheet prompt (framework: ai-film-character-set-design skill)">{{ a.character_sheet_prompt }}</textarea>
+          <textarea class="ta bible-ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="character_sheet_prompt" onchange="autoSaveAsset(this)" placeholder="Character sheet generation prompt">{{ a.character_sheet_prompt }}</textarea>
         </div>
         <div>
           <div class="cell-label">Reference Voice Prompt</div>
@@ -166,18 +166,14 @@ audio.voice {
           <div class="cell-label">Reference Images</div>
           <div class="strip">
             {% for im in a.images %}
-            <div class="thumb {{ 'sel' if im == a.primary_image else '' }}" style="cursor:zoom-in" onclick="openLightbox('/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}')">
+            <div class="thumb {{ 'sel' if im == a.primary_image else '' }}" data-file="{{ im }}" style="cursor:zoom-in" onclick="openLightbox('/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}')">
               <img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}" alt="{{ a.name }}" title="{{ im }}">
-              <button class="star {{ 'on' if im == a.primary_image else '' }}" title="✓ use this one (approved)" onclick="event.stopPropagation();selectAssetMedia('{{ scope_id }}','{{ a.id }}','{{ im }}',this.parentElement)">★</button>
+              <button class="star {{ 'on' if im == a.primary_image else '' }}" title="{{ '✓ Approved — click to unapprove' if im == a.primary_image else 'Mark approved' }}" onclick="event.stopPropagation();selectAssetMedia('{{ scope_id }}','{{ a.id }}','{{ im }}',this.parentElement)">★</button>
             </div>
             {% else %}
             <span style="color:var(--mut);font-size:12px;">No reference images yet.</span>
             {% endfor %}
           </div>
-          {% if a.prompt %}
-          <div class="cell-label" style="margin-top:12px;">Prompt</div>
-          <textarea class="ta" data-project="{{ scope_id }}" data-asset="{{ a.id }}" data-field="prompt" onchange="autoSaveAsset(this)" placeholder="Prompt" style="min-height:90px">{{ a.prompt }}</textarea>
-          {% endif %}
         </div>
         <div>
           <div class="cell-label">Reference Voice</div>
@@ -223,9 +219,9 @@ audio.voice {
           <div class="cell-label">Reference Images</div>
           <div class="strip">
             {% for im in a.images %}
-            <div class="thumb {{ 'sel' if im == a.primary_image else '' }}" style="cursor:zoom-in" onclick="openLightbox('/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}')">
+            <div class="thumb {{ 'sel' if im == a.primary_image else '' }}" data-file="{{ im }}" style="cursor:zoom-in" onclick="openLightbox('/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}')">
               <img src="/a/{{ scope_id }}/{{ a.id }}/file/{{ im|urlencode }}" alt="{{ a.name }}" title="{{ im }}">
-              <button class="star {{ 'on' if im == a.primary_image else '' }}" title="✓ use this one (approved)" onclick="event.stopPropagation();selectAssetMedia('{{ scope_id }}','{{ a.id }}','{{ im }}',this.parentElement)">★</button>
+              <button class="star {{ 'on' if im == a.primary_image else '' }}" title="{{ '✓ Approved — click to unapprove' if im == a.primary_image else 'Mark approved' }}" onclick="event.stopPropagation();selectAssetMedia('{{ scope_id }}','{{ a.id }}','{{ im }}',this.parentElement)">★</button>
             </div>
             {% else %}
             <span style="color:var(--mut);font-size:12px;">No reference images yet.</span>
@@ -260,7 +256,7 @@ audio.voice {
 </div>
 
 {% include '_studio_ui.html' %}
-<script src="{{ url_for('static', filename='studio.js') }}?v=7"></script>
+<script src="{{ url_for('static', filename='studio.js') }}?v=10"></script>
 <script>
 function toggleAsset(head) {
   head.closest('.asset').classList.toggle('open');

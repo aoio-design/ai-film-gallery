@@ -54,8 +54,9 @@ defaults, not the number to quote.
 > `/a/<season>` (Character Bible & Assets) and `/p/<episode>` (episode script +
 > one card per shot). It starts empty — you populate it, I only review it.
 > Always use `"format": "director"` for new projects, save generated media into
-> the shot/asset folders with the exact filenames the app expects
-> (`image.png`, `video.mp4`, ...), and update `projects.json` whenever we add
+> the shot/asset folders following the media file naming standard in your
+> studio-ops skill (descriptive versioned names — never `image.png` /
+> `video.mp4`, never overwrite), and update `projects.json` whenever we add
 > shots, episodes or assets.
 
 ## 4. Learn each new project — automatically
@@ -90,9 +91,16 @@ defaults, not the number to quote.
 > 3. **Draft review, two rounds** — First the script: I review the episode
 >    page (script pane and per-shot boxes) and we loop until I approve it.
 >    THEN you build the character/location/prop bible and populate the assets
->    page (words only) and I review that in a second round. Read only the
->    notes newer than your last revision, amend the drafts, re-upload, and
->    tell me what changed. Repeat until I approve the words.
+>    page (words only) and I review that in a second round. For each
+>    character write ALL SIX bible fields — appearance, personality &
+>    backstory, distinguishing features, wardrobe/style, emotional range,
+>    body language — plus the Character Sheet Prompt composed from them. The
+>    field list and structure are in the studio-ops skill; you do not need to
+>    open any other project's or asset's text to learn the shape. Populate
+>    the locations and props the same way (description + their generation
+>    prompt). Read only the notes newer than your last revision, amend the
+>    drafts, re-upload, and tell me what changed. Repeat until I approve the
+>    words.
 > 4. **Reference images** — after I approve the words AND approve the cost:
 >    generate the character sheets, key props and location scenes through my
 >    fal.ai account, upload them to the assets page, and wait for my review.
@@ -117,14 +125,22 @@ defaults, not the number to quote.
 > The fal.ai spending rule, which you must never break: every successful
 > generation costs me money (about US$0.17 per character sheet at high
 > quality, US$0.04 per location or prop, US$0.16 per keyframe, US$0.40 per
-> 5-second clip, US$0.04–0.14 per upscale). Never start a paid batch yourself, never
-> assume one was approved, and never sit silently waiting. As soon as you get
-> feedback that needs generation, message me on Telegram or WhatsApp and ask
-> ONE of these, then do exactly what I answer: (a) "Shall I generate the [N]
-> shots now? It'll cost about US$X." — then wait for my yes; or (b) "Which
-> shots should I regenerate?" — then re-roll only those. Check my fal balance
-> before a batch and warn me if it's low; report what each batch actually cost
-> when it finishes. Batch work into one go instead of asking twice.
+> 5-second clip, US$0.04–0.14 per upscale). **Quote the cost, then get an
+> explicit yes — even when I say "go generate".** "Go" or "yes" to an
+> earlier step is NOT approval for a paid batch: before the first paid
+> request you must message me with the exact scope and the estimated cost
+> ("Shall I generate the [N] sheets now? It'll cost about US$X.") and WAIT
+> for my explicit yes to THAT message. Never announce a batch and its cost
+> in the same message as launching it — the cost quote comes first, on its
+> own, and the batch starts only after I approve that quote. Never start a
+> paid batch yourself, never assume one was approved, and never sit silently
+> waiting. As soon as you get feedback that needs generation, message me on
+> Telegram or WhatsApp and ask ONE of these, then do exactly what I answer:
+> (a) "Shall I generate the [N] shots now? It'll cost about US$X." — then
+> wait for my yes; or (b) "Which shots should I regenerate?" — then re-roll
+> only those. Check my fal balance before a batch and warn me if it's low;
+> report what each batch actually cost when it finishes. Batch work into one
+> go instead of asking twice.
 >
 > Confirm you understand this workflow and the fal.ai spending rule.
 
@@ -143,10 +159,11 @@ defaults, not the number to quote.
 2. One speaker per video clip; dialogue lines ≤ 5 seconds per clip, written
    inside the clip's prompt.
 3. Keep all prompts in my project folders so nothing is lost.
-4. Never start a paid generation batch yourself — ask me on
-   Telegram/WhatsApp first ("shall I generate the N shots now? it'll cost
-   about US$X" / "which shots should I regenerate?"), check my fal balance
-   first, and tell me what each batch cost when it's done.
+4. Never start a paid generation batch yourself — even if I say "go
+   generate", quote the exact scope + cost ("shall I generate the N shots
+   now? it'll cost about US$X") and WAIT for my explicit yes to that quote.
+   Ask me on Telegram/WhatsApp first, check my fal balance first, and tell
+   me what each batch cost when it's done.
 5. Only successful generations are billed — a failed request costs nothing,
    so a bad clip is just one re-roll, not a wasted session.
 6. Verify every download before you claim success: the file must exist on

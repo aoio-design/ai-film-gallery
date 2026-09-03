@@ -94,6 +94,12 @@ to production mode. (Also auto-loads on film intent voiced in plain language.)
 `RESOLVE SCOPE` → (alternative named → MAPPING PROTOCOL) → `LIVE COST QUOTE` → `SEEK APPROVAL`
 (never start a paid batch without an explicit yes) → `GENERATE + PROVENANCE` → `report actual cost`.
 
+**"Go generate" is not approval — the quote is the gate.** When the owner
+says "go" or "yes, generate" after an earlier step, that is NOT authorization
+for a paid batch: reply with the exact scope and the live cost estimate and
+WAIT for an explicit yes to that specific quote. Never announce a batch and
+its cost in the same message as launching it.
+
 ## Governance
 
 - **Append, never override.** A model is added once, selected by scope. The global default row is

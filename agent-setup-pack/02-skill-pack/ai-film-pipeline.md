@@ -58,7 +58,9 @@ by the owner in their video editor.
   to the owner for review and WAIT — never offer or start keyframe,
   video-prompt or clip work in the same breath. (2) Only after the script is
   approved, write the character bible + asset text and populate the studio's
-  assets page (words only, free), then hand THAT back for approval too.
+  assets page (words only, free — every character gets all six bible fields
+  plus the Character Sheet Prompt composed from them; schema in studio-ops),
+  then hand THAT back for approval too.
   Generation starts only after both gates pass. Skipping ahead wastes review
   time and spends money early.
 - **Spending rule.** Every successful generation bills the owner (about US$0.17
@@ -67,6 +69,11 @@ by the owner in their video editor.
   start a paid batch without asking on Telegram/WhatsApp ("shall I generate
   the N shots now? it'll cost about US$X"), check the balance first, report
   the actual cost when done. See `fal-ai-ops`.
+- **Quote first, then get an explicit yes — even when the owner says "go
+  generate".** "Go" or "yes" to an earlier step is NOT approval for a paid
+  batch: state the exact scope and the estimated cost and WAIT for an
+  explicit yes to THAT message. Never announce a batch and its cost in the
+  same message as launching it — the quote comes first, on its own.
 - **One speaker per clip, lines ≤ 5 seconds.** The model syncs one mouth to
   one voice per clip. Break dialogue into shot/reverse-shot close-ups.
 - **Consistency comes from reference images.** Anchor every shot with the
@@ -74,14 +81,16 @@ by the owner in their video editor.
 - **Motion-only video prompts.** The keyframe sets the scene; the prompt
   only describes what moves and the camera.
 - **Verify before claiming success.** Every generated file must exist on
-  disk with a sensible size and be copied into the right studio folder
-  (`image.png`, `video.mp4` in the shot folder; masters in `masters/`).
+  disk with a sensible size and be copied into the right studio folder under
+  its descriptive versioned name (the studio-ops skill's naming standard) —
+  never a bare `image.png`/`video.mp4`, and never overwrite an existing
+  file. Masters go in `masters/`.
 
 ## Where things live
 
 - Project words: `/opt/data/studio/` (projects.json, shot cards, script pane)
 - Reference media: `/opt/data/studio/assets/<season>/<asset>/`
-- Review copies: `/opt/data/studio/shots/<film>/<shot>/` (`image.png`, `video.mp4`)
+- Review copies: `/opt/data/studio/shots/<film>/<shot>/` (versioned media files)
 - Masters: `/opt/data/studio/masters/<film>/<shot_id>.mp4`
 
 ## Done?

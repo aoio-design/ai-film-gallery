@@ -138,6 +138,48 @@ def save_projects(data):
 def get_shot_dir(project_id, shot_id):
     return SHOTS_DIR / project_id / shot_id
 
+def _pick_newest(files, d):
+    """Display default when nothing is approved yet: the most recently
+    generated/uploaded file (regeneration order == file mtime)."""
+    best, best_t = None, -1.0
+    for name in files:
+        try:
+            t = (d / name).stat().st_mtime
+        except OSError:
+            t = 0.0
+        if t > best_t:
+            best_t, best = t, name
+    return best
+
+def _mtime_of(d, name):
+    try:
+        return (d / name).stat().st_mtime
+    except OSError:
+        return 0.0
+
+def _primary_valid(meta, key, files, d):
+    """Is the stored approval still valid? An approval describes a specific
+    media state, so any regeneration invalidates it:
+      - a newer file of the same kind arrived (additive regeneration), or
+      - the approved file itself was rewritten in place after approval.
+    Approving touches the file (making it the newest) and records *_at, so a
+    deliberate pick of an older file sticks until the NEXT regeneration."""
+    p = meta.get(key)
+    if not p or p not in files:
+        return False
+    pt = _mtime_of(d, p)
+    if any(_mtime_of(d, f) > pt for f in files):
+        return False
+    at = meta.get(key + "_at")
+    if at:
+        try:
+            t = datetime.fromisoformat(at).timestamp()
+        except Exception:
+            t = None
+        if t is not None and pt > t + 5:
+            return False
+    return True
+
 def get_shot_meta(project_id, shot_id):
     d = get_shot_dir(project_id, shot_id)
     meta_file = d / "metadata.json"
@@ -291,14 +333,28 @@ def gallery(project_id):
         videos.sort(key=_natural)
         shot["images"] = images
         shot["videos"] = videos
-        shot["primary_image"] = (
-            meta.get("primary_image") if meta.get("primary_image") in images
-            else (images[0] if images else None)
-        )
-        shot["primary_video"] = (
-            meta.get("primary_video") if meta.get("primary_video") in videos
-            else (videos[0] if videos else None)
-        )
+        # Approval state (the star): only an explicit stored pick counts, and
+        # only while the media set is unchanged. Nothing is auto-approved, and
+        # a regeneration (any newer file, or the approved file rewritten in
+        # place) automatically reverts the pick to unapproved.
+        sd = get_shot_dir(project_id, shot["id"])
+        dirty = False
+        if meta.get("primary_image") and (meta.get("primary_image") not in images
+                or not _primary_valid(meta, "primary_image", images, sd)):
+            meta.pop("primary_image", None); meta.pop("primary_image_at", None); dirty = True
+        if meta.get("primary_video") and (meta.get("primary_video") not in videos
+                or not _primary_valid(meta, "primary_video", videos, sd)):
+            meta.pop("primary_video", None); meta.pop("primary_video_at", None); dirty = True
+        if dirty:
+            save_shot_meta(project_id, shot["id"], meta)
+        shot["primary_image"] = meta.get("primary_image") if meta.get("primary_image") in images else None
+        shot["primary_video"] = meta.get("primary_video") if meta.get("primary_video") in videos else None
+        # Display default for the preview box / player: the approved file if
+        # any, otherwise the NEWEST file (regenerated clips surface latest).
+        shot["fallback_image"] = _pick_newest(images, sd)
+        shot["fallback_video"] = _pick_newest(videos, sd)
+        shot["preview_image"] = shot["primary_image"] or shot["fallback_image"]
+        shot["preview_video"] = shot["primary_video"] or shot["fallback_video"]
         shot["has_image"] = bool(images)
         shot["has_video"] = bool(videos)
 
@@ -377,7 +433,21 @@ def update_shot(project_id, shot_id):
     field = request.form.get("field")
     value = request.form.get("value", "")
     if field in ("image_prompt", "video_prompt", "script", "primary_image", "primary_video"):
-        meta[field] = value
+        # Empty value clears the field (unapproving removes the stored pick)
+        if not value:
+            meta.pop(field, None)
+            meta.pop(field + "_at", None)
+        else:
+            meta[field] = value
+            if field.startswith("primary_"):
+                # Timestamp + touch the file: an approval is only valid while
+                # the media set is unchanged, so regenerations are detectable.
+                meta[field + "_at"] = datetime.now(timezone.utc).isoformat()
+                if "/" not in value and "\\" not in value:
+                    try:
+                        os.utime(get_shot_dir(project_id, shot_id) / value)
+                    except OSError:
+                        pass
         save_shot_meta(project_id, shot_id, meta)
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Unknown field"}), 400
@@ -389,12 +459,11 @@ def upload_shot_media(project_id, shot_id):
     """Add one or more generated images/videos to a shot (regeneration history).
 
     Existing files are never overwritten — a name collision gets a numeric
-    suffix (image.png -> image-2.png). First image/video added becomes the
-    primary automatically.
+    suffix (image.png -> image-2.png). Nothing is auto-approved: new media
+    starts unapproved until the owner picks it with the star.
     """
     d = get_shot_dir(project_id, shot_id)
     d.mkdir(parents=True, exist_ok=True)
-    meta = get_shot_meta(project_id, shot_id)
     IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
     VIDEO_EXTS = (".mp4", ".webm", ".mov")
     saved, skipped = [], []
@@ -415,11 +484,15 @@ def upload_shot_media(project_id, shot_id):
             n += 1
         f.save(str(d / candidate))
         saved.append(candidate)
-    if saved:
-        if ext_group(saved[0], IMAGE_EXTS, VIDEO_EXTS) == "image":
-            meta.setdefault("primary_image", saved[0])
-        else:
-            meta.setdefault("primary_video", saved[0])
+    # A regeneration (new files landing) invalidates any previous approval of
+    # that kind — the pick must be made again on the new media.
+    meta = get_shot_meta(project_id, shot_id)
+    dirty = False
+    if any(os.path.splitext(s)[1].lower() in IMAGE_EXTS for s in saved) and meta.get("primary_image"):
+        meta.pop("primary_image", None); meta.pop("primary_image_at", None); dirty = True
+    if any(os.path.splitext(s)[1].lower() in VIDEO_EXTS for s in saved) and meta.get("primary_video"):
+        meta.pop("primary_video", None); meta.pop("primary_video_at", None); dirty = True
+    if dirty:
         save_shot_meta(project_id, shot_id, meta)
     return jsonify({"ok": True, "saved": saved, "skipped": skipped})
 
@@ -614,6 +687,15 @@ def assets_page(assets_scope):
             files = sorted(f.name for f in d.iterdir() if f.is_file() and f.name != "metadata.json")
             images = [f for f in files if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))]
             audios = [f for f in files if f.lower().endswith((".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aac"))]
+            # A regeneration (any newer image, or the approved one rewritten in
+            # place) reverts the asset to unapproved; keep the file in step.
+            if meta.get("primary_image") and (meta.get("primary_image") not in images
+                    or not _primary_valid(meta, "primary_image", images, d)):
+                meta.pop("primary_image", None)
+                meta.pop("primary_image_at", None)
+                meta["status"] = "Generated"
+                save_asset_meta(assets_scope, d.name, meta)
+            pi = meta.get("primary_image")
             assets.append({
                 "id": d.name,
                 "name": meta.get("name", d.name),
@@ -629,13 +711,12 @@ def assets_page(assets_scope):
                 "voice": meta.get("voice", ""),
                 "character_sheet_prompt": meta.get("character_sheet_prompt", ""),
                 "voice_prompt": meta.get("voice_prompt", ""),
-                "status": meta.get("status", ""),
+                "status": _asset_status(pi, images),
                 "description": meta.get("description", ""),
                 "prompt": meta.get("prompt", ""),
                 "feedback": meta.get("feedback", []),
                 "image": images[0] if images else None,
-                "primary_image": (meta.get("primary_image") if meta.get("primary_image") in images
-                                  else (images[0] if images else None)),
+                "primary_image": pi if pi in images else None,
                 "audio": audios[0] if audios else None,
                 "images": images,
                 "audios": audios,
@@ -644,6 +725,14 @@ def assets_page(assets_scope):
     # the Location/Prop table keeps its alphabetical order).
     assets.sort(key=lambda a: (a["billing"], a["name"].lower()))
     return render_template("assets.html", scope_id=assets_scope, scope_title=scope_title, assets=assets, season=season)
+
+def _asset_status(pi, images):
+    """Pill label = image-approval state ONLY (derived from the star):
+    an approved (stored) image -> "Approved"; reference images exist but none
+    approved -> "Generated"; no reference images -> hidden ("")."""
+    if not images:
+        return ""
+    return "Approved" if pi in images else "Generated"
 
 @app.route("/a/<project_id>/<asset_id>/file/<filename>")
 @login_required
@@ -663,7 +752,29 @@ def update_asset(project_id, asset_id):
                  "wardrobe", "emotional_range", "body_language", "voice", "status",
                  "description", "prompt", "character_sheet_prompt", "voice_prompt",
                  "primary_image"):
-        meta[field] = value
+        # Empty value clears the field (unapproving removes the stored pick)
+        if not value:
+            meta.pop(field, None)
+            meta.pop(field + "_at", None)
+        else:
+            meta[field] = value
+            if field == "primary_image":
+                # Timestamp + touch the file: an approval is only valid while
+                # the media set is unchanged, so regenerations are detectable.
+                meta["primary_image_at"] = datetime.now(timezone.utc).isoformat()
+                if "/" not in value and "\\" not in value:
+                    try:
+                        os.utime(APP_ASSETS_DIR / project_id / asset_id / value)
+                    except OSError:
+                        pass
+        # Keep the stored status field in step with the star (agents read the
+        # metadata files directly; the pill itself is derived at render time).
+        pi = meta.get("primary_image")
+        d = APP_ASSETS_DIR / project_id / asset_id
+        if pi and "/" not in pi and "\\" not in pi and (d / pi).is_file():
+            meta["status"] = "Approved"
+        else:
+            meta["status"] = "Generated"
         save_asset_meta(project_id, asset_id, meta)
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Unknown field"}), 400

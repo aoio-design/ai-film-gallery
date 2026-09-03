@@ -39,34 +39,108 @@ function toast(msg) {
 }
 
 /* ---------- Lightbox ---------- */
+/* Full-screen image viewer: zoom bar (50-300%), drag-to-pan, scroll-wheel
+   zoom toward the cursor, double-click to toggle fit (100%) / 200% at the
+   cursor, and arrow-key panning when zoomed in. */
 var _lbZoom = 100;
+var _lbX = 0, _lbY = 0;        /* pan offsets in screen px (post-scale) */
+var _lbDrag = null;            /* active drag: {id, sx, sy, ox, oy} */
+var _lbWheelT = null;          /* debounce timer restoring the transition */
+
+function _lbImg() { return document.getElementById('lightbox-img'); }
+
+/* Overflow beyond the viewport on each axis, at the current zoom. */
+function _lbOverflow() {
+  var img = _lbImg();
+  if (!img || !img.offsetWidth) return null;
+  var s = _lbZoom / 100;
+  var vw = window.innerWidth, vh = window.innerHeight;
+  return {
+    x: Math.max(0, (img.offsetWidth * s - vw) / 2),
+    y: Math.max(0, (img.offsetHeight * s - vh) / 2)
+  };
+}
+function _lbPannable() {
+  var o = _lbOverflow();
+  return !!(o && (o.x > 0.5 || o.y > 0.5));
+}
+/* Keep image edges inside the viewport; no overflow -> pinned centred. */
+function _lbClamp() {
+  var o = _lbOverflow();
+  if (!o) return;
+  _lbX = Math.max(-o.x, Math.min(o.x, _lbX));
+  _lbY = Math.max(-o.y, Math.min(o.y, _lbY));
+}
 function applyLightboxZoom() {
-  var img = document.getElementById('lightbox-img');
+  var img = _lbImg();
   var pct = document.getElementById('zoomPct');
   var rng = document.getElementById('zoomRange');
-  if (img) img.style.transform = 'scale(' + (_lbZoom / 100) + ')';
+  _lbClamp();
+  if (img) {
+    img.style.transform = 'translate(' + _lbX + 'px,' + _lbY + 'px) scale(' + (_lbZoom / 100) + ')';
+    img.classList.toggle('pannable', _lbPannable());
+  }
   if (pct) pct.textContent = _lbZoom + '%';
   if (rng) rng.value = _lbZoom;
 }
-function lightboxZoom(delta) {
-  _lbZoom = Math.min(300, Math.max(50, _lbZoom + delta));
+/* Zoom to an absolute level. The image point under `anchor` (client coords)
+   stays put under the cursor; no anchor -> zoom around the image centre. */
+function lightboxSetZoom(v, anchor) {
+  var nv = Math.round(Number(v));
+  if (!isFinite(nv)) nv = 100;
+  nv = Math.min(300, Math.max(50, nv));
+  var s0 = _lbZoom / 100, s1 = nv / 100;
+  var px = 0, py = 0;
+  if (anchor && isFinite(anchor.x)) {
+    px = anchor.x - window.innerWidth / 2;
+    py = anchor.y - window.innerHeight / 2;
+  }
+  _lbX = _lbX * (s1 / s0) + px * (1 - s1 / s0);
+  _lbY = _lbY * (s1 / s0) + py * (1 - s1 / s0);
+  _lbZoom = nv;
   applyLightboxZoom();
 }
-function lightboxZoomTo(v) {
-  _lbZoom = parseInt(v, 10) || 100;
-  applyLightboxZoom();
-}
+function lightboxZoom(delta) { lightboxSetZoom(_lbZoom + delta, null); }
+function lightboxZoomTo(v) { lightboxSetZoom(v, null); }
 function openLightbox(src) {
   var lb = document.getElementById('lightbox');
   if (!lb) return;
-  document.getElementById('lightbox-img').src = src;
-  _lbZoom = 100;
+  _lbEndDrag();
+  _lbZoom = 100; _lbX = 0; _lbY = 0;
+  var img = _lbImg();
+  if (img) img.src = src;
   applyLightboxZoom();
   lb.classList.add('active');
 }
 function closeLightbox() {
+  _lbEndDrag();
   var lb = document.getElementById('lightbox');
   if (lb) lb.classList.remove('active');
+}
+
+/* ---- Drag to pan (Pointer Events: mouse + touch + pen) ---- */
+function _lbStartDrag(e) {
+  if (_lbDrag) return;                       /* one gesture at a time */
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  if (!_lbPannable()) return;                /* image fits -> plain click */
+  var img = _lbImg();
+  e.preventDefault();
+  _lbDrag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: _lbX, oy: _lbY };
+  img.classList.add('dragging');
+  try { img.setPointerCapture(e.pointerId); } catch (err) {}
+}
+function _lbMoveDrag(e) {
+  var d = _lbDrag;
+  if (!d || e.pointerId !== d.id) return;
+  _lbX = d.ox + (e.clientX - d.sx);
+  _lbY = d.oy + (e.clientY - d.sy);
+  applyLightboxZoom();
+}
+function _lbEndDrag(e) {
+  if (e && _lbDrag && e.pointerId !== _lbDrag.id) return;
+  _lbDrag = null;
+  var img = _lbImg();
+  if (img) img.classList.remove('dragging');
 }
 
 /* ---------- Focus mode: 3 sections, edge bars, + / − ---------- */
@@ -248,9 +322,25 @@ function sendAgentFeedback() {
     .finally(function () { btn.disabled = false; ta.focus(); });
 }
 
-/* Esc closes drawer + lightbox; Enter sends (Shift+Enter = newline) */
+/* Esc closes drawer + lightbox; Enter sends (Shift+Enter = newline).
+   While the lightbox is open, arrow keys pan the zoomed image
+   (hold Shift for bigger steps). */
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') { toggleDrawer(false); closeLightbox(); }
+  if (e.key === 'Escape') { toggleDrawer(false); closeLightbox(); return; }
+  if (e.key.indexOf('Arrow') !== 0) return;
+  var lb = document.getElementById('lightbox');
+  if (!lb || !lb.classList.contains('active')) return;
+  var t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' ||
+            t.tagName === 'SELECT' || t.isContentEditable)) return;
+  if (!_lbPannable()) return;
+  e.preventDefault();
+  var step = e.shiftKey ? 200 : 40;
+  if (e.key === 'ArrowLeft') _lbX += step;
+  else if (e.key === 'ArrowRight') _lbX -= step;
+  else if (e.key === 'ArrowUp') _lbY += step;
+  else if (e.key === 'ArrowDown') _lbY -= step;
+  applyLightboxZoom();
 });
 document.addEventListener('DOMContentLoaded', function () {
   var ta = document.getElementById('agentTa');
@@ -261,56 +351,75 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-/* ---------- Media strips: choose primary image / video ---------- */
+/* ---------- Media strips: approve / unapprove (star toggle) ----------
+   Yellow star = approved (the stored pick). Clicking the approved file
+   unapproves it — zero approvals is a valid state. Freshly uploaded media
+   starts unapproved; the preview box / player fall back to the newest file. */
+function _stripStars(strip, chosenEl, approved) {
+  if (!strip) return;
+  strip.querySelectorAll('.thumb').forEach(function (t) {
+    t.classList.remove('sel');
+    var star = t.querySelector('.star');
+    if (star) { star.classList.remove('on'); star.title = 'Mark approved'; }
+  });
+  if (approved && chosenEl) {
+    chosenEl.classList.add('sel');
+    var star = chosenEl.querySelector('.star');
+    if (star) { star.classList.add('on'); star.title = '✓ Approved — click to unapprove'; }
+  }
+}
 function selectShotMedia(project, shot, kind, filename, el) {
   var field = (kind === 'image') ? 'primary_image' : 'primary_video';
+  var strip = document.getElementById('strip-' + kind + '-' + shot);
+  var cur = strip ? strip.querySelector('.thumb.sel') : null;
+  var curFile = cur ? (cur.dataset.file || '') : '';
+  var unapprove = (curFile === filename);
   var fd = new FormData();
   fd.append('field', field);
-  fd.append('value', filename);
+  fd.append('value', unapprove ? '' : filename);
   fetch('/p/' + project + '/' + shot + '/update', { method: 'POST', body: fd }).catch(function () {});
   var fb = new FormData();
-  fb.append('text', '[approved ' + kind + '] ' + filename);
+  fb.append('text', (unapprove ? '[unapproved ' : '[approved ') + kind + '] ' + filename);
   fetch('/p/' + project + '/' + shot + '/feedback', { method: 'POST', body: fb }).catch(function () {});
+  _stripStars(strip, unapprove ? null : el, !unapprove);
   var main = document.getElementById('media-' + kind + '-' + shot);
   if (main) {
-    var url = '/p/' + project + '/' + shot + '/file/' + encodeURIComponent(filename);
-    if (kind === 'image') {
-      main.innerHTML = '<img src="' + url + '" onclick="openLightbox(this.src)" alt="' + shot + ' image">';
-    } else {
-      main.innerHTML = '<video controls playsinline preload="metadata" src="' + url + '"></video>';
-      if (window.onShotVideoReplaced) window.onShotVideoReplaced(shot, url);
+    var url = unapprove
+      ? (main.dataset.fallback || '')
+      : '/p/' + project + '/' + shot + '/file/' + encodeURIComponent(filename);
+    if (url) {
+      if (kind === 'image') {
+        main.innerHTML = '<img src="' + url + '" onclick="openLightbox(this.src)" alt="' + shot + ' image">';
+      } else {
+        main.innerHTML = '<video controls playsinline preload="metadata" src="' + url + '"></video>';
+        if (window.onShotVideoReplaced) window.onShotVideoReplaced(shot, url);
+      }
     }
-  }
-  var strip = document.getElementById('strip-' + kind + '-' + shot);
-  if (strip) {
-    strip.querySelectorAll('.thumb').forEach(function (t) { t.classList.remove('sel'); });
-    strip.querySelectorAll('.star').forEach(function (s) { s.classList.remove('on'); });
-  }
-  if (el) {
-    el.classList.add('sel');
-    var star = el.querySelector('.star');
-    if (star) star.classList.add('on');
   }
 }
 
-/* ---------- Asset media strips: choose primary reference (single-star) ---------- */
+/* ---------- Asset media strips: approve / unapprove (single-star) ---------- */
 function selectAssetMedia(scope, asset, filename, el) {
+  var strip = el ? el.parentElement : null;
+  var cur = strip ? strip.querySelector('.thumb.sel') : null;
+  var curFile = cur ? (cur.dataset.file || '') : '';
+  var unapprove = (curFile === filename);
   var fd = new FormData();
   fd.append('field', 'primary_image');
-  fd.append('value', filename);
+  fd.append('value', unapprove ? '' : filename);
   fetch('/a/' + scope + '/' + asset + '/update', { method: 'POST', body: fd }).catch(function () {});
   var fb = new FormData();
-  fb.append('text', '[approved] ' + filename);
+  fb.append('text', (unapprove ? '[unapproved] ' : '[approved] ') + filename);
   fetch('/a/' + scope + '/' + asset + '/feedback', { method: 'POST', body: fb }).catch(function () {});
-  var strip = el ? el.parentElement : null;
-  if (strip) {
-    strip.querySelectorAll('.thumb').forEach(function (t) { t.classList.remove('sel'); });
-    strip.querySelectorAll('.star').forEach(function (s) { s.classList.remove('on'); });
-  }
-  if (el) {
-    el.classList.add('sel');
-    var star = el.querySelector('.star');
-    if (star) star.classList.add('on');
+  _stripStars(strip, unapprove ? null : el, !unapprove);
+  /* Keep the header pill in step: Approved (green) when a pick exists,
+     Generated (blue) when nothing is approved. */
+  var card = el ? el.closest('.asset') : null;
+  var pill = card ? card.querySelector('.asset-summary .status') : null;
+  if (pill) {
+    var approved = !unapprove;
+    pill.textContent = approved ? 'Approved' : 'Generated';
+    pill.className = 'status ' + (approved ? 'approved' : 'generated');
   }
 }
 
@@ -352,3 +461,42 @@ document.addEventListener('DOMContentLoaded', function () {
     if (x !== null) { sa.scrollLeft = parseInt(x, 10) || 0; sessionStorage.removeItem('studio-scroll'); }
   } catch (e) {}
 });
+
+/* ---------- Lightbox interactions (drag / wheel / double-click) ---------- */
+function initLightboxInteractions() {
+  var lb = document.getElementById('lightbox');
+  var img = _lbImg();
+  if (!lb || !img) return;
+  /* Clicking the image itself must never close the viewer; the dark
+     backdrop and the ✕ button are the close targets. */
+  img.addEventListener('click', function (e) { e.stopPropagation(); });
+  img.addEventListener('pointerdown', _lbStartDrag);
+  img.addEventListener('pointermove', _lbMoveDrag);
+  img.addEventListener('pointerup', _lbEndDrag);
+  img.addEventListener('pointercancel', _lbEndDrag);
+  img.addEventListener('dblclick', function (e) {
+    e.preventDefault();
+    /* toggle: fit (100%) <-> 200% anchored at the cursor */
+    if (_lbZoom !== 100) lightboxSetZoom(100, null);
+    else lightboxSetZoom(200, { x: e.clientX, y: e.clientY });
+  });
+  /* Scroll wheel zooms toward the cursor (not over the zoom bar itself) */
+  lb.addEventListener('wheel', function (e) {
+    if (!lb.classList.contains('active')) return;
+    if (e.target && e.target.closest && e.target.closest('.lightbox-zoom')) return;
+    e.preventDefault();
+    img.classList.add('instant');
+    clearTimeout(_lbWheelT);
+    _lbWheelT = setTimeout(function () { img.classList.remove('instant'); }, 160);
+    lightboxSetZoom(_lbZoom * Math.pow(1.0016, -e.deltaY), { x: e.clientX, y: e.clientY });
+  }, { passive: false });
+  /* The image's real size only arrives after load: re-clamp + re-apply */
+  img.addEventListener('load', function () {
+    if (lb.classList.contains('active')) applyLightboxZoom();
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLightboxInteractions);
+} else {
+  initLightboxInteractions();
+}

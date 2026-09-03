@@ -53,7 +53,7 @@ genmedia run openai/gpt-image-2 \
 
 **Structured prompt format:** `Scene:` / `Subject:` / `Important details:` / `Use case:` / `Constraints:`
 **Character sheet (three-panel, landscape, ONE face):** plain neutral gray (#e0e0e0) backdrop, equal-width 3-panel horizontal sheet: Panel 1 face+shoulders close-up (front, neutral), Panel 2 full-body front (A-pose), Panel 3 full-body back (same pose as center); landscape 1536x1024. Use photographic vocabulary (full-frame DSLR 85mm f/2.8, soft three-point studio light, visible skin texture/pores, individual hair strands, real materials). Describe the character as realistic and unpolished — "avoid conventionally polished or symmetrical features". Do NOT include text labels, watermarks, inconsistent proportions, or background props.
-**Location:** **4-panel sheet, 16:9 landscape** — wide establishing + alternate wide (~90°) + corner depth + detail shot; locked lighting/time-of-day, no people, environment only. (Full template in character-set-design skill.)
+**Location:** **4-panel sheet, 16:9 landscape** — wide establishing + alternate wide (~90°) + corner depth + detail shot; locked lighting/time-of-day, no people, environment only. (Full writing structure: `references/bible-and-asset-writing.md`.)
 **Prop:** **4-panel grid, neutral gray (#e0e0e0)** — front + side (90°) + back + close-up detail; studio lighting, no cast shadows, consistent scale, no text labels.
 
 ### First-frame edit (keyframes) — GPT Image 2 edit
@@ -73,7 +73,7 @@ genmedia run openai/gpt-image-2/edit \
 ### Video clip (first frame → clip with sound)
 
 ```bash
-genmedia upload /opt/data/studio/shots/<film>/<shot>/image.png
+genmedia upload /opt/data/studio/shots/<film>/<shot>/<film>_<shot>_v1.png
 genmedia run minimax/h3-max/image-to-video \
   --prompt "<motion + camera + dialogue-in-quotes + soundscape>" \
   --image_url "<cdn_url>" \
@@ -90,7 +90,7 @@ and room sound baked in — there are no separate audio files.
 ### 4K master (approved clip → upscaled)
 
 ```bash
-genmedia upload /opt/data/studio/shots/<film>/<shot>/video.mp4
+genmedia upload /opt/data/studio/shots/<film>/<shot>/<film>_<shot>_v1.mp4
 genmedia run fal-ai/bytedance-upscaler/upscale/video \
   --video_url "<cdn_url>" \
   --target_resolution 4k --enhancement_preset aigc --target_fps 24 --download
@@ -112,6 +112,11 @@ upscale — check `genmedia pricing <model-id>` for live rates).
   Telegram or WhatsApp: *"Shall I generate the [N] shots now? It'll cost
   about US$X."* Wait for a yes. Regenerating a single bad shot from review
   feedback is fine to confirm the same way ("re-roll shot 4? ~US$0.40").
+- **Quote the cost, then get an explicit yes — even when the owner says
+  "go generate".** "Go" or "yes" to an earlier step is NOT approval for a
+  paid batch: state the exact scope and estimated cost and WAIT for an
+  explicit yes to that message. Never announce a batch and its cost in the
+  same message as launching it — the quote comes first, on its own.
 - **Check the balance before a batch.** If you can't confirm credit is
   available (the owner's fal dashboard), warn them to top up — a request with
   no credit simply waits, and you should say why.
@@ -127,8 +132,9 @@ upscale — check `genmedia pricing <model-id>` for live rates).
    they exist and are non-trivial in size (an image ≥ ~100 KB; a 5-second
    clip several MB).
 2. Play/check the clip briefly if possible (ffprobe or similar), confirm it's
-   an MP4 with audio, then copy it into the studio folder with the exact
-   filename the gallery expects (`image.png`, `video.mp4`, …).
+   an MP4 with audio, then copy it into the studio folder under its
+   descriptive versioned name (the studio-ops skill's naming standard) —
+   never a bare `image.png`/`video.mp4`, and never overwrite an existing file.
 3. Only then tell the owner what is ready to review. Never claim a
    generation succeeded without the downloaded file on disk.
 

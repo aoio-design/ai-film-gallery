@@ -57,10 +57,11 @@
 <!-- ============ Lightbox ============ -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close">×</button>
-  <img id="lightbox-img" alt="">
+  <img id="lightbox-img" alt="" draggable="false"
+       title="Drag to pan · Scroll to zoom · Double-click: fit ↔ 200%">
   <div class="lightbox-zoom" onclick="event.stopPropagation()">
     <button class="zoom-btn" id="zoomOut" title="Zoom out" onclick="lightboxZoom(-25)">−</button>
-    <input type="range" id="zoomRange" min="50" max="300" step="25" value="100" oninput="lightboxZoomTo(this.value)">
+    <input type="range" id="zoomRange" min="50" max="300" step="5" value="100" oninput="lightboxZoomTo(this.value)">
     <button class="zoom-btn" id="zoomIn" title="Zoom in" onclick="lightboxZoom(25)">+</button>
     <span class="zoom-pct" id="zoomPct">100%</span>
   </div>

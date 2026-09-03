@@ -92,35 +92,49 @@ The scope is a season id (preferred) or a project id. Assets live in
 `assets/<scope>/<asset_id>/metadata.json` + media files. Each asset is one
 folder; the agent populates it by dropping files + `metadata.json` in.
 
-**metadata.json fields** (all optional, all editable in the UI):
+**metadata.json fields** — Characters (all editable in the UI):
 
 ```json
 {
   "id": "nora-chen",
   "name": "Nora Chen",
-  "type": "Character",            // Character | Location | Prop
+  "type": "Character",             // Character | Location | Prop
   "role": "Lead — the story's protagonist",
-  "appearance": "…",
+  "appearance": "…",              // looks: age, build, face, hair, skin, posture
   "personality": "…",             // personality & backstory
   "distinguishing": "…",          // distinguishing features
   "wardrobe": "…",                // palette, silhouette, texture
   "emotional_range": "…",         // NEUTRAL/HAPPY/CONCERNED/… cards
   "body_language": "…",           // movement & posture profile
+  "character_sheet_prompt": "…",  // image prompt for the reference sheet —
+                                  // compose it from the six fields above
+  "voice_prompt": "…",            // voice direction / TTS prompt (if any)
   "voice": "nora_voice.wav",      // voice file reference
   "status": "Approved",           // Approved | Revision | Generated
-  "description": "…",
-  "prompt": "…",                  // generation prompt
   "feedback": [{"timestamp": "…", "text": "…"}]
 }
 ```
 
-**Character Bible table** (type=Character) renders two rows per character:
-row 1 = Appearance · Personality & Backstory · Distinguishing Features ·
-Reference (images); row 2 = Wardrobe / Style · Emotional Range · Body
-Language Profile · Voice (audio). Every field is an editable autosave
-textarea (except Reference/Voice which show media). Character name, Status
-and Feedback span both rows. Characters sort **leads/main first, then
-supporting** (derived from `role`).
+Locations and Props use the same file with `"type": "Location"` or
+`"type": "Prop"` and carry `description` + `prompt` (their generation
+prompt) + media only — no bible fields.
+
+**When you populate a Character asset, write EVERY one of the six bible
+fields** — appearance, personality & backstory, distinguishing features,
+wardrobe/style, emotional range, body language — from the approved script
+and your story notes; none is optional. Then write `character_sheet_prompt`,
+the image-model prompt for that character's reference sheet, composed from
+the relevant text in those six fields (sheet format: `ai-film-prompt-
+engineering` skill). The structure is defined right here — never open another
+project's or another asset's texts to copy their shape.
+
+**Character Bible table** (type=Character) renders an editable grid per
+character: row 1 = Appearance · Personality & Backstory · Distinguishing
+Features · Wardrobe / Style; row 2 = Emotional Range · Body Language
+Profile · Character Sheet Prompt · Reference Voice Prompt. Reference Images
+and Reference Voice sit below the grid. Every text field is an autosave
+textarea. Characters sort **leads/main first, then supporting** (derived
+from `role`).
 
 **Location Scenes and Props table** (all non-Character types): Type · Name ·
 Preview (images/audio) · Prompt (editable) · Status · Feedback.
@@ -128,14 +142,41 @@ Preview (images/audio) · Prompt (editable) · Status · Feedback.
 Voices live inline in the Bible's Voice column — do NOT create standalone
 Voice assets.
 
-## File naming the gallery expects
+## Media file naming standard
 
-| File name | What it shows on the card |
+Save every generated file under a descriptive, VERSIONED name — never a bare
+`image.png` / `video.mp4`, and never overwrite an existing file. Each
+regeneration is a NEW file with the next version number.
+
+Pattern: `<scope-id>_<Entity>_<Kind>_v<N>[<_option>].<ext>`
+
+| Media | File name |
 |---|---|
-| `image.png` or `image.jpg` | Keyframe image row |
-| `video.mp4` (`.webm`, `.mov`) | Video row |
-| `*.wav`, `*.mp3`, `*.m4a`, `*.flac`, `*.ogg`, `*.aac` | Audio row — several allowed (`line-1.wav`, `line-2.wav`, `ambient.wav`) |
+| Character sheet | `<season-id>_<CharacterName>_Reference_Sheet_v1.png` |
+| Location sheet | `<season-id>_<LocationName>_v1.png` |
+| Prop sheet | `<season-id>_<PropName>_v1.png` |
+| Keyframe image | `<episode-id>_<ShotID>_v1.png` |
+| Video clip | `<episode-id>_<ShotID>_v1.mp4` (same v-number as its keyframe) |
+| 4K master | same name as the approved clip, in `masters/<film>/` |
+| Voice reference | `<season-id>_<CharacterName>_Audio_Reference_v1.wav` |
 | `metadata.json` | Script, prompts, feedback notes (with timestamps) |
+
+Rules
+- Scope tokens are the studio's own folder ids, verbatim: a season folder
+  (`my-s1`) for assets, an episode folder for shots; the shot token is the
+  shot id exactly as it appears on the page (`Ep1-01`). Entity names drop
+  spaces and apostrophes (`Maya Chen` → `MayaChen`). Underscores are the only
+  separator — no spaces or special characters.
+- `v<N>` = generation attempt (1, 2, 3 …): bump it every time the owner asks
+  for a new or regenerated version. Several candidates delivered in ONE
+  attempt get letters: `_v1_a.png`, `_v1_b.png`.
+- The studio lists every file it finds in a folder, so older takes stay
+  visible for comparison. The owner approves a file with the star; the studio
+  auto-clears that approval when a newer file arrives — never edit approvals
+  yourself.
+- Characters/locations/props reused in later seasons keep their original
+  files. Reference them from their home season folder — never copy, rename,
+  or regenerate them elsewhere unless the owner asks for a new version.
 
 ## Episode script pane
 
@@ -149,8 +190,9 @@ field. Feedback on the script lives in that JSON's `feedback[]` too.
 
 1. **A shot only appears if it's listed in `projects.json`.** Dropping files
    into `shots/` is not enough — add the shot to the project's `shots` list.
-2. **Exact names or nothing.** The app looks up media by the exact filenames
-   in the table above.
+2. **Versioned names, never overwrite.** Save media under the naming standard
+   above, always bumping `v<N>`; the app lists every file in the folder, so
+   old takes stay visible for comparison.
 3. **Feedback is timestamped and incremental.** Read ONLY notes newer than
    the shot's last regeneration; act on those, then regenerate.
 4. **One layout only:** always set `"format": "director"` on a new project.
@@ -189,7 +231,7 @@ create it all. The loop:
    skill), then save the master on the VPS as
    `/opt/data/studio/masters/<film>/<shot_id>.mp4` (create the folder if it
    doesn't exist) and tell the owner the exact path. Never overwrite the
-   review copy in `shots/<film>/<shot>/video.mp4` — the card keeps showing
+   review copy in the shot folder (`shots/<film>/<shot>/`) — the card keeps showing
    that one. If the owner ever asks where their finished clips are, answer
    with this folder.
 
@@ -202,6 +244,12 @@ create it all. The loop:
 > US$0.16 per keyframe, ~US$0.40 per 5-second clip, ~US$0.14 per 4K upscale).
 
 - **Never** start a paid batch, assume one was approved, or silently wait.
+  **Quote the cost, then get an explicit yes — even when the owner says
+  "go generate".** "Go" or "yes" to an earlier step is NOT approval for a
+  paid batch: before the first paid request, state the exact scope and the
+  estimated cost and WAIT for an explicit yes to THAT message. Never
+  announce a batch and its cost in the same message as launching it — the
+  quote comes first, on its own, and the batch starts only after approval.
 - The moment you receive feedback (from the gallery, the watcher, or chat)
   that requires generation, message the owner on **Telegram or WhatsApp** and
   ask ONE of these, then do exactly what they answer:

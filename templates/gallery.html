@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ project.title }} — AI Film Studio</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=7">
+<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=10">
 <style>
 /* ============ Page layout (workspace) ============ */
 body {
@@ -334,16 +334,16 @@ body.focus-shots .top-area { display:none; }
         <div class="acc-body"><div class="acc-body-inner">
           <div class="media-main" id="media-image-{{ shot.id }}">
             {% if shot.has_image %}
-            <img src="/p/{{ project.id }}/{{ shot.id }}/file/{{ shot.primary_image|urlencode }}" onclick="openLightbox(this.src)" alt="{{ shot.id }} image">
+            <img src="/p/{{ project.id }}/{{ shot.id }}/file/{{ shot.preview_image|urlencode }}" data-fallback="/p/{{ project.id }}/{{ shot.id }}/file/{{ shot.fallback_image|urlencode }}" onclick="openLightbox(this.src)" alt="{{ shot.id }} image">
             {% else %}
             <div class="empty">(no image yet)</div>
             {% endif %}
           </div>
           <div class="strip" id="strip-image-{{ shot.id }}">
             {% for im in shot.images %}
-            <div class="thumb {{ 'sel' if im == shot.primary_image else '' }}" onclick="selectShotMedia('{{ project.id }}','{{ shot.id }}','image','{{ im }}',this)">
+            <div class="thumb {{ 'sel' if im == shot.primary_image else '' }}" data-file="{{ im }}" onclick="selectShotMedia('{{ project.id }}','{{ shot.id }}','image','{{ im }}',this)">
               <img src="/p/{{ project.id }}/{{ shot.id }}/file/{{ im|urlencode }}" alt="{{ im }}" title="{{ im }}">
-              <button class="star {{ 'on' if im == shot.primary_image else '' }}" title="✓ use this one (approved)" onclick="event.stopPropagation();selectShotMedia('{{ project.id }}','{{ shot.id }}','image','{{ im }}',this.parentElement)">★</button>
+              <button class="star {{ 'on' if im == shot.primary_image else '' }}" title="{{ '✓ Approved — click to unapprove' if im == shot.primary_image else 'Mark approved' }}" onclick="event.stopPropagation();selectShotMedia('{{ project.id }}','{{ shot.id }}','image','{{ im }}',this.parentElement)">★</button>
             </div>
             {% endfor %}
             <div class="thumb add" title="Add image(s) to this shot" onclick="studioUpload('{{ project.id }}','{{ shot.id }}','image')">+</div>
@@ -372,16 +372,16 @@ body.focus-shots .top-area { display:none; }
         <div class="acc-body"><div class="acc-body-inner">
           <div class="media-main" id="media-video-{{ shot.id }}">
             {% if shot.has_video %}
-            <video controls playsinline preload="metadata" src="/p/{{ project.id }}/{{ shot.id }}/file/{{ shot.primary_video|urlencode }}"></video>
+            <video controls playsinline preload="metadata" src="/p/{{ project.id }}/{{ shot.id }}/file/{{ shot.preview_video|urlencode }}" data-fallback="/p/{{ project.id }}/{{ shot.id }}/file/{{ shot.fallback_video|urlencode }}"></video>
             {% else %}
             <div class="empty">(no video yet)</div>
             {% endif %}
           </div>
           <div class="strip" id="strip-video-{{ shot.id }}">
             {% for vd in shot.videos %}
-            <div class="thumb {{ 'sel' if vd == shot.primary_video else '' }}" onclick="selectShotMedia('{{ project.id }}','{{ shot.id }}','video','{{ vd }}',this)">
+            <div class="thumb {{ 'sel' if vd == shot.primary_video else '' }}" data-file="{{ vd }}" onclick="selectShotMedia('{{ project.id }}','{{ shot.id }}','video','{{ vd }}',this)">
               <video src="/p/{{ project.id }}/{{ shot.id }}/file/{{ vd|urlencode }}#t=0.5" preload="metadata" muted></video>
-              <button class="star {{ 'on' if vd == shot.primary_video else '' }}" title="✓ use this one (approved)" onclick="event.stopPropagation();selectShotMedia('{{ project.id }}','{{ shot.id }}','video','{{ vd }}',this.parentElement)">★</button>
+              <button class="star {{ 'on' if vd == shot.primary_video else '' }}" title="{{ '✓ Approved — click to unapprove' if vd == shot.primary_video else 'Mark approved' }}" onclick="event.stopPropagation();selectShotMedia('{{ project.id }}','{{ shot.id }}','video','{{ vd }}',this.parentElement)">★</button>
             </div>
             {% endfor %}
             <div class="thumb add" title="Add video(s) to this shot" onclick="studioUpload('{{ project.id }}','{{ shot.id }}','video')">+</div>
@@ -415,12 +415,12 @@ body.focus-shots .top-area { display:none; }
 <!-- Edge bars, FAB, drawer, lightbox, toast -->
 {% include '_studio_ui.html' %}
 
-<script src="{{ url_for('static', filename='studio.js') }}?v=7"></script>
+<script src="{{ url_for('static', filename='studio.js') }}?v=10"></script>
 <script>
-/* ---------- Playlist for the sequence player (primary video per shot) ---------- */
+/* ---------- Playlist for the sequence player (approved, else newest, per shot) ---------- */
 const PLAYLIST = [
   {% for s in project.shots if s.has_video %}
-  { id: {{ s.id|tojson }}, url: {{ ('/p/%s/%s/file/%s'|format(project.id, s.id, s.primary_video|urlencode))|tojson }} },
+  { id: {{ s.id|tojson }}, url: {{ ('/p/%s/%s/file/%s'|format(project.id, s.id, s.preview_video|urlencode))|tojson }} },
   {% endfor %}
 ];
 

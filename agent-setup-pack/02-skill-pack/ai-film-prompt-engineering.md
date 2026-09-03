@@ -41,7 +41,7 @@ Use case: [editorial photo / product mockup / concept frame]
 Constraints: [no watermark / no logos / no extra text / preserve face / preserve layout]
 ```
 
-### Asset templates (see the character-set-design skill)
+### Asset templates (full writing structure + sheet formats: `references/bible-and-asset-writing.md`)
 
 - **Character sheet = 3-panel, landscape (1536×1024), ONE face.** Plain neutral
   gray (#e0e0e0) backdrop; equal-width panels — face+shoulders close-up,
