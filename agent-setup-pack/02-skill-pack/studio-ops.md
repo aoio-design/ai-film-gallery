@@ -171,9 +171,9 @@ Rules
   for a new or regenerated version. Several candidates delivered in ONE
   attempt get letters: `_v1_a.png`, `_v1_b.png`.
 - The studio lists every file it finds in a folder, so older takes stay
-  visible for comparison. The owner approves a file with the star; the studio
-  auto-clears that approval when a newer file arrives — never edit approvals
-  yourself.
+  visible for comparison. The owner approves a take by clicking its **★**; a
+  newer file never takes over automatically — the owner clicks the ★ on the
+  take they want. Never edit approvals yourself.
 - Characters/locations/props reused in later seasons keep their original
   files. Reference them from their home season folder — never copy, rename,
   or regenerate them elsewhere unless the owner asks for a new version.
@@ -214,18 +214,39 @@ create it all. The loop:
    `projects.json`, the assets in `assets/<season>/…` (`/a/<season>`), the
    episode entries (`/s/<season>`) and every shot card (`/p/<episode>`), with
    the episode script in `_episode_script.json`. **Words only at this stage —
-   no generation, no cost.**
-3. **Draft review.** The owner leaves feedback on `/a/<season>` (characters,
-   sets, props) and on `/p/<episode>` (script pane + per-shot boxes). Read only
-   notes newer than your last revision, amend the drafts, re-upload, and say
-   what changed. Loop until the owner approves the words.
-4. **Generation — ASK ABOUT THE COST FIRST (see the rule below).** Generate
-   keyframes and clips through the owner's fal.ai account (see the
-   `fal-ai-ops` skill), save them into the shot folders / asset folders with
-   the exact filenames, and tell the owner what is ready to review and what
-   the batch cost.
-5. **Media review.** Same feedback loop: a note on a card = regenerate that one
-   shot or asset. An "approved" note = done.
+   no generation, no cost** — but every asset card already carries its
+   **image prompt** (Characters: `character_sheet_prompt`; Locations/Props:
+   `prompt`) drafted from the bible fields, so the owner reviews the prompt
+   and the description together.
+3. **Draft review.** The owner reviews the words on `/a/<season>` (characters,
+   sets, props) and on `/p/<episode>` (script pane + shot cards), sending
+   notes through the **Talk to your agent** drawer and editing prompt /
+   description fields directly on the cards when they prefer. Read only notes
+   newer than your last revision, amend the drafts, re-upload, and say what
+   changed. Loop until the owner approves the words — they signal that in
+   chat (e.g. "generate the reference images").
+4. **Generation — ASK ABOUT THE COST FIRST (see the rule below), and run the
+   project's phases in order.** Each phase runs through the owner's fal.ai
+   account (see the `fal-ai-ops` skill); save outputs into the right folders
+   with the exact filenames; tell the owner what is ready to review and what
+   the batch cost. Never start a phase before the owner has finished
+   reviewing the previous one:
+   a. **Reference images** for the approved assets (character sheets,
+      locations, props) — quote the cost and wait for an explicit yes, then
+      generate. The owner reviews on `/a/<season>`, approves each image with
+      its **★**, and says in chat when the review is complete (e.g. "I've
+      completed the review of the images in /a/<season>").
+   b. **First frames** — only after the owner has reviewed the reference
+      images: quote, wait for yes, then generate one first frame per shot
+      from the approved references (see the keyframe-authoring skill).
+   c. **Clips** — only after the owner has reviewed and **★**-approved the
+      frames: quote, wait for yes, then generate one clip per shot from its
+      approved frame (the video model speaks the dialogue).
+5. **Media review.** The owner approves a take by clicking its **★** on the
+   card; a note on a card (via the drawer) = regenerate that ONE shot or
+   asset — quote the cost, get a yes, save the new take under the next `v<N>`
+   name, never overwrite. Nothing is approved until the owner stars it; when
+   they say the review is done, move to the next phase.
 6. **Approved video → 4K master.** When the owner approves a shot's video,
    upscale that clip to 4K with the fal.ai upscaler (see the `fal-ai-ops`
    skill), then save the master on the VPS as
