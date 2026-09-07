@@ -387,3 +387,22 @@ body.focus-shots .fab .fab-icon { display:block; }
   color:var(--mut); transition:color .15s, background .15s, transform .15s;
 }
 .theme-toggle:hover { color:var(--text); transform:scale(1.06); }
+
+/* ---------- Header pill nav (Projects · Season · Assets) ----------
+   Shared across /p (gallery), /s (season), /a (assets) page headers.
+   Per-page context hiding: the current section's pill is omitted (e.g. the
+   Assets pill on /a, Season+Assets pills on /s). */
+.nav-pillbox {
+  display:flex; align-items:center; gap:2px;
+  padding:3px; border:1px solid var(--line); border-radius:980px;
+  background:var(--panel2);
+}
+.nav-pill {
+  display:inline-flex; align-items:center;
+  border:none; border-radius:980px; cursor:pointer;
+  padding:5px 14px; font-family:var(--sans); font-size:12.5px; font-weight:600;
+  color:var(--mut); background:transparent; text-decoration:none;
+  white-space:nowrap; transition:color .15s, background .15s;
+}
+.nav-pill:hover { color:var(--text); background:var(--panel); }
+.nav-pill:active { transform:scale(.97); }

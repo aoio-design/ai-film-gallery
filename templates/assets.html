@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Character Bible &amp; Assets — {{ scope_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=10">
+<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=11">
 <style>
 body { padding:0; }
 .header {
@@ -93,9 +93,12 @@ audio.voice {
 
 <div class="header">
   <a class="brand" href="/projects" title="Home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Home"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></a>
-  <a href="{{ '/s/' + season.id if season else '/projects' }}" class="back">‹ {{ 'Season' if season else 'Projects' }}</a>
   <h1>Character Bible &amp; Assets</h1>
   <span class="spacer"></span>
+  <nav class="nav-pillbox" aria-label="Studio sections">
+    <a class="nav-pill" href="/projects">Projects</a>
+    {% if season %}<a class="nav-pill" href="/s/{{ season.id }}">Season</a>{% endif %}
+  </nav>
   <button class="theme-toggle" onclick="toggleTheme()" title="Toggle appearance">🌙</button>
 </div>
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ season.title }} — AI Film Studio</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=10">
+<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=11">
 <style>
 .nav {
   position:sticky; top:0; z-index:50;
@@ -47,9 +47,10 @@ h3 { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:upper
 <body>
 <nav class="nav">
   <a class="brand" href="/projects" title="Home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Home"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></a>
-  <span class="sep">|</span>
-  <a href="/projects" class="back">‹ Projects</a>
   <span class="spacer"></span>
+  <nav class="nav-pillbox" aria-label="Studio sections">
+    <a class="nav-pill" href="/projects">Projects</a>
+  </nav>
   <button class="theme-toggle" onclick="toggleTheme()" title="Toggle appearance">🌙</button>
 </nav>
 <div class="wrap">

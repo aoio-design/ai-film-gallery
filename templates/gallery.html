@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ project.title }} — AI Film Studio</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=10">
+<link rel="stylesheet" href="{{ url_for('static', filename='studio.css') }}?v=11">
 <style>
 /* ============ Page layout (workspace) ============ */
 body {
@@ -22,6 +22,29 @@ body {
 .back:hover { text-decoration:underline; }
 .header .spacer { flex:1; }
 .shot-counter { color:var(--mut); font-size:12.5px; }
+
+/* ---------- Shot jump pill (bottom-left, Shot List expanded only) ---------- */
+.jump-pill {
+  position:fixed; left:56px; bottom:14px; z-index:75;
+  display:none; align-items:center; gap:4px;
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:980px; padding:4px 14px 4px 12px;
+  box-shadow:var(--shadow-sm); font-family:var(--sans); font-size:12.5px;
+  color:var(--text); user-select:none;
+}
+body.focus-shots .jump-pill { display:flex; }
+.jp-prefix { color:var(--mut); font-weight:600; letter-spacing:.02em; }
+.jp-input {
+  width:3em; min-width:0; text-align:center;
+  background:var(--panel2); color:var(--text);
+  border:1px solid var(--line); border-radius:8px;
+  font-family:var(--mono); font-size:12.5px; font-weight:700;
+  padding:2px 4px; outline:none; font-variant-numeric:tabular-nums;
+  transition:border-color .15s, box-shadow .15s;
+}
+.jp-input:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft); }
+.jp-input.err { border-color:var(--red); color:var(--red); box-shadow:0 0 0 3px var(--red-soft); }
+.jp-total { color:var(--mut); white-space:nowrap; }
 
 /* ---------- Sections + headers ---------- */
 .sec-head {
@@ -208,7 +231,7 @@ body.focus-preview .player-counter { margin-left:14px; }
         use margin-left instead so the safe zone stays put. ---- */
 body.focus-preview .pane-player .pane-body { padding-bottom:56px; margin-left:72px; }
 body.focus-script  .pane-script .pane-body { padding-bottom:56px; margin-right:72px; }
-body.focus-shots   .scroll-area            { margin-left:72px; margin-right:72px; }
+body.focus-shots .scroll-area { margin-left:72px; margin-right:72px; padding-bottom:58px; }
 
 body.focus-shots .top-area { display:none; }
 </style>
@@ -217,10 +240,13 @@ body.focus-shots .top-area { display:none; }
 
 <div class="header">
   <a class="brand" href="/projects" title="Home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Home"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></a>
-  <a href="/projects" class="back">‹ Projects</a>
   <h1>{{ project.title }}</h1>
   <span class="spacer"></span>
-  <a href="/a/{{ season.id if season else project.id }}" class="back">Assets</a>
+  <nav class="nav-pillbox" aria-label="Studio sections">
+    <a class="nav-pill" href="/projects">Projects</a>
+    <a class="nav-pill" href="/s/{{ season.id if season else project.id }}">Season</a>
+    <a class="nav-pill" href="/a/{{ season.id if season else project.id }}">Assets</a>
+  </nav>
   <button class="theme-toggle" onclick="toggleTheme()" title="Toggle appearance">🌙</button>
 </div>
 
@@ -410,6 +436,15 @@ body.focus-shots .top-area { display:none; }
     </article>
     {% endfor %}
   </div>
+</div>
+
+<!-- Shot jump pill: current shot readout + jump-to-shot number (bottom-left;
+     visible only while the Shot List section is expanded) -->
+<div class="jump-pill" id="jumpPill">
+  <span class="jp-prefix" id="jpPrefix"></span>
+  <input class="jp-input" id="jpInput" type="text" inputmode="numeric" autocomplete="off"
+         spellcheck="false" aria-label="Jump to shot number" title="Type a shot number, press Enter">
+  <span class="jp-total" id="jpTotal"></span>
 </div>
 
 <!-- Edge bars, FAB, drawer, lightbox, toast -->
@@ -701,6 +736,96 @@ window.addEventListener('DOMContentLoaded', () => {
     if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'start' });
   }
 });
+
+/* ---------- Shot jump pill (bottom-left; Shot List expanded only) ----------
+   Readout:  Ep1-<input> / 110  — the number reflects the shot nearest the
+   left edge and live-updates on scroll. Typing a number + Enter scrolls that
+   shot to the left edge (zero-padding tolerant). Esc/blur restore the current
+   shot; an invalid number/character shows the input in red without scrolling. */
+(function () {
+  const sc = document.getElementById('scrollArea');
+  const pill = document.getElementById('jumpPill');
+  const inp = document.getElementById('jpInput');
+  const pre = document.getElementById('jpPrefix');
+  const tot = document.getElementById('jpTotal');
+  if (!sc || !pill || !inp || !pre || !tot) return;
+  const cards = Array.from(sc.querySelectorAll('.shot'));
+  if (!cards.length) return;
+
+  // Shot id -> trailing number ("Ep1-37" -> 37). Prefix is everything before it.
+  function partsOf(id) {
+    const m = /^(.*?)(\d+)\s*$/.exec(id || '');
+    return m ? { pre: m[1], num: parseInt(m[2], 10) } : { pre: '', num: NaN };
+  }
+  // Common prefix across shots ("Ep1-") for the readout label.
+  let prefix = '';
+  const p = partsOf(cards[0] && cards[0].dataset.shot);
+  if (!isNaN(p.num)) prefix = p.pre;
+  pre.textContent = prefix;
+  tot.textContent = '/ ' + cards.length;
+
+  function nearestIdx() {
+    let best = 0, bestDist = Infinity;
+    const sl = sc.scrollLeft;
+    for (let i = 0; i < cards.length; i++) {
+      const d = Math.abs(cards[i].offsetLeft - sl);
+      if (d < bestDist) { bestDist = d; best = i; }
+    }
+    return best;
+  }
+  function currentShotId() { return (cards[nearestIdx()] || {}).dataset.shot || ''; }
+  function refresh() {
+    // Never clobber an in-progress edit.
+    if (document.activeElement === inp) return;
+    const n = partsOf(currentShotId()).num;
+    if (!isNaN(n)) inp.value = String(n);
+    inp.classList.remove('err');
+  }
+  function restore() {
+    const n = partsOf(currentShotId()).num;
+    if (!isNaN(n)) inp.value = String(n);
+    inp.classList.remove('err');
+  }
+  function findCard(num) {
+    for (let i = 0; i < cards.length; i++) {
+      if (partsOf(cards[i].dataset.shot).num === num) return cards[i];
+    }
+    return null;
+  }
+  // Live readout only in focus-shots mode; skip while the user is typing.
+  let ticking = false;
+  sc.addEventListener('scroll', () => {
+    if (!document.body.classList.contains('focus-shots')) return;
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { ticking = false; refresh(); });
+  });
+  inp.addEventListener('focus', () => { inp.select(); inp.classList.remove('err'); });
+  let skipRestore = false;   // set right after a successful Enter jump
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const raw = inp.value.trim();
+      if (!/^\d+$/.test(raw)) { inp.classList.add('err'); return; }   // letters/symbols
+      const num = parseInt(raw, 10);
+      if (num < 1) { inp.classList.add('err'); return; }              // 0/negative
+      const target = findCard(num);
+      if (!target) { inp.classList.add('err'); return; }              // no such shot
+      inp.classList.remove('err');
+      target.scrollIntoView({ behavior: 'smooth', inline: 'start' });
+      skipRestore = true;
+      inp.blur();   // hand control back so the live readout resumes
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      inp.blur();
+    }
+  });
+  inp.addEventListener('blur', () => {
+    if (skipRestore) { skipRestore = false; return; }   // let the live readout take over
+    restore();
+  });
+  refresh();
+})();
 </script>
 </body>
 </html>
