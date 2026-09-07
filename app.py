@@ -313,7 +313,7 @@ def gallery(project_id):
                 if not f.is_file() or f.name == "metadata.json":
                     continue
                 n = f.name.lower()
-                if n.startswith("image") and n.endswith(IMAGE_EXTS):
+                if n.endswith(IMAGE_EXTS):
                     images.append(f.name)
                 elif n.endswith(VIDEO_EXTS):
                     videos.append(f.name)

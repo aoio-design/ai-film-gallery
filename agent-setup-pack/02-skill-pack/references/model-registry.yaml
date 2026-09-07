@@ -27,14 +27,16 @@ binding_scopes:            # resolved highest -> lowest at generation time
 
 stages:                    # model-agnostic — the "what" never varies
   - reference_images       # character sheets / location set stills / prop sheets
+  - reference_voices       # per-character voice-reference clip (feeds the video stage's Audio N)
   - keyframe               # first frame per shot (or opening+closing IF the video binding demands it)
   - video                  # clip with dialogue + sound
   - master                 # upscale to delivery resolution
 
-global_default:            # the frozen stack (unchanged unless the studio owner names a model)
+global_default:            # the frozen stack (unchanged unless the owner names a model)
   reference_images: openai/gpt-image-2
+  reference_voices: fal-ai/elevenlabs/tts/eleven-v3
   keyframe: openai/gpt-image-2/edit
-  video: minimax/h3-max/image-to-video
+  video: minimax/h3-max/reference-to-video
   master: fal-ai/bytedance-upscaler/upscale/video
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -67,7 +69,7 @@ profiles:
     state: mapped
     default: true
     accepts_refs: true           # image_urls (up to 16); optional mask_url for surgical edits
-    quality: high                # Owner (Sep 1 2026): first frames at high quality (~$0.15) for better clips
+    quality: high                # the owner (Sep 1 2026): first frames at high quality (~$0.15) for better clips
     cost: "US$0.158 (1920x1080 high, fal table 2 Sep 2026)"
     prompt_dialect: "composition-from-references: put subject from ref N into setting from ref M"
     quality_dialect: "same fidelity vocab as txt2img; CRITICAL: preserve the ONE face — the sheet's
@@ -83,8 +85,8 @@ profiles:
     name: MiniMax H3 Max (image-to-video)
     model: minimax/h3-max/image-to-video
     state: mapped
-    default: true
-    cost: "US$0.08/s @ 768P (~US$0.40 per 5s) list"
+    default: false   # superseded as the video default Sep 7 2026 (the studio owner named h3-max/reference-to-video); kept for single-image I2V scope use
+    cost: "US$0.08/s @ 768P (~US$0.40 per 5s) list — launch promo ($0.02/s) expired Sep 7 2026"
     prompt_dialect: "H3 six-section block (subject_definitions / summary / retention_analysis /
       detailed_description / overall_soundscape / non_diegetic_music). See minimax-h3-prompting."
     quality_dialect: "dialogue INSIDE quotes in the prompt with a delivery tone (model speaks + lip-syncs);
@@ -114,6 +116,38 @@ profiles:
 # Selecting one of these = run the mapping protocol (see model-routing.md) first:
 # cheap gather -> draft profile -> smoke test -> append SOLID profile -> then batch.
 # ────────────────────────────────────────────────────────────────────────────
+  - id: eleven-v3-voice-ref
+    stage: reference_voices
+    name: ElevenLabs Eleven v3 (character voice reference)
+    model: fal-ai/elevenlabs/tts/eleven-v3
+    state: mapped
+    default: true
+    cost: "US$0.10 / 1,000 chars (~US$0.01 per 7s voice line)"
+    params: { voice: "<preset/clone per character — picked with the studio owner at generation time>", stability: 0.5, similarity_boost: 0.75 }
+    prompt_dialect: "one neutral 7s line per character (standard; H3's Audio-N window is 2-15s)"
+    quality_dialect: "voice choice is a per-character creative decision made with the owner; the saved clip is reused verbatim as that character's Audio N on every clip"
+    dims: n/a (audio only)
+    frame_pair: false
+    source_of_truth: ["https://fal.ai/models/fal-ai/elevenlabs/tts/eleven-v3"]
+    last_verified: "2026-09-07"
+    verified_by: owner
+
+  - id: h3-max-reference-video
+    stage: video
+    name: MiniMax H3 Max (reference-to-video) — CURRENT global default
+    model: minimax/h3-max/reference-to-video
+    state: mapped   # smoke test passed Sep 7 2026 (Ep2-74, ~US$0.57 incl. keyframe): Image-1-as-keyframe anchors frame 0, Audio-1 voice clone lands, IR job-mapping verified via expanded_prompt; AR 16:9 explicit confirmed
+    default: true
+    cost: "US$0.08/s @ 768P (~US$0.40 per 5s) + reference tokens: 4,096 free, then $0.02/1K (image = w*h/1024 tok; audio ~80 tok/s; video refs ~7,459 tok/s @ 768p — AVOID, ~$0.66 per 5s clip ref)"
+    prompt_dialect: "fal labels by LIST ORDER — Image 1, Image 2, ..., Audio 1, ... (the model's IR maps them to H3's native <Picture N>/<Audio N>). Dense six-section-style body remains the strongest input; give every reference an explicit job; dialogue written in quotes with the delivery tone and 'matching Audio N's voice' at the line"
+    quality_dialect: "voice CLONED from the Audio ref, not synthesized — this is the cross-shot voice-consistency mechanism; one speaker per clip, lines <= 5s; lip-sync from the dialogue text"
+    accepts_refs: true    # <=9 images + <=3 audio (2-15s each, <=15s combined) + <=3 video; <=12 files total; audio never alone
+    ref_budget: "target <=4,096 ref tokens = $0 overage: keyframe (~2,025) + 1 char sheet (~1,536) + 7s voice (~560) ~= 4,121 -> crop the sheet to the face panel or pay ~$0.0005; NO location-sheet ref at the clip stage (the keyframe carries the setting; a loc sheet costs ~1,296 tok and pushes past the allowance)"
+    dims: "768P canvas 1344x768 @ 24 fps; AR is a PROJECT setting — pass --aspect_ratio explicitly (16:9 default; 9:16 vertical-shorts), never rely on 'adaptive'; keyframe rendered at the project AR as Image 1"
+    frame_pair: false
+    source_of_truth: ["https://fal.ai/models/minimax/h3-max/reference-to-video"]
+    last_verified: "2026-09-07"
+    verified_by: owner
   - id: seedance-25
     stage: video
     name: Seedance 2.5

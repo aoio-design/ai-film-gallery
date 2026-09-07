@@ -26,21 +26,22 @@ instructions; if it's missing here, install it):
 
 ```bash
 curl https://genmedia.sh/install -fsS | bash
-export PATH="$HOME/.genmedia:$PATH"
+export PATH="$HOME/.genmedia/bin:$PATH"
 ```
 
 Verify the connection: `genmedia models minimax --limit 3` — a list with no
 error means the key works. To see any model's exact flags:
 `genmedia run <model-id> --help`.
 
-## The four models (guide stack, August 2026)
+## The five models (guide stack, 2026)
 
 | Job | Model | Default settings |
 |---|---|---|
 | Character reference sheets | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":1024}'`, `--quality high`, `--output_format png` |
 | Location & prop reference images | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":864}'`, `--quality medium`, `--output_format png` |
 | First-frame edits (keyframes) | `openai/gpt-image-2/edit` | `--image_urls <refs>`, `--image_size '{"width":1920,"height":1080}'`, `--quality high` |
-| Video clips (with sound) | `minimax/h3-max/image-to-video` | `--duration 5`, `--resolution 768P`, `--prompt_expansion_mode balanced` |
+| Reference voices (per character, once) | `fal-ai/elevenlabs/tts/eleven-v3` | 7-second line per character (~US$0.01); saved as `<season>_<CharacterName>_Audio_Reference_v1.wav` |
+| Video clips (sound + cloned voice) | `minimax/h3-max/reference-to-video` | `--reference_image_urls <keyframe, then char sheets>` `--reference_audio_urls <speaker's voice wav>`, `--duration 5`, `--resolution 768P`, `--aspect_ratio 16:9`, `--prompt_expansion_mode balanced` |
 | Upscaler (masters) | `fal-ai/bytedance-upscaler/upscale/video` | `--target_resolution 4k`, `--enhancement_preset aigc`, `--target_fps 24` |
 
 ### Reference image — text to image (GPT Image 2)
@@ -68,24 +69,46 @@ genmedia run openai/gpt-image-2/edit \
   --image_urls "<cdn_url_1>,<cdn_url_2>" --image_size '{"width":1920,"height":1080}' --quality high --output_format png --download
 ```
 
-(Render keyframes at a **fixed 1920×1080 (16:9)** — supersampled above H3 Max's 768p-class canvas (1344×768) so the model downsamples clean detail. `image_urls` accepts up to 16 refs. Optional `mask_url`: white = editable, black = preserved.)
+(Render keyframes at **1920×1080 (16:9)** by default — supersampled above H3 Max's 768p-class canvas (1344×768) so the model downsamples clean detail. `image_urls` accepts up to 16 refs. Optional `mask_url`: white = editable, black = preserved. Match the project's aspect ratio: a vertical-shorts project renders keyframes 1080×1920 and passes `--aspect_ratio 9:16` on clips.)
 
-### Video clip (first frame → clip with sound)
+### Reference voice (per character — generate once, reuse on every clip)
+
+Before clips: one short voice reference per speaking character.
+
+```bash
+genmedia run fal-ai/elevenlabs/tts/eleven-v3 \
+  --text "<one neutral ~7s line in the character's voice>" \
+  --voice "<voice preset or clone id — picked with the owner>" --download
+```
+
+~US$0.01 per character (US$0.10 per 1,000 chars). The character's asset card carries a **Reference Voice Prompt**; the same saved file is uploaded as Audio 1 on every clip where that character speaks.
+
+### Video clip (keyframe + refs → clip with CLONED voice)
+
+Everything goes in **one request** — the keyframe first (Image 1), then the character sheets of everyone on screen (Images 2, 3, …), then the speaker's voice reference (Audio 1). References are named in the prompt **by modality and list order**.
 
 ```bash
 genmedia upload /opt/data/studio/shots/<film>/<shot>/<film>_<shot>_v1.png
-genmedia run minimax/h3-max/image-to-video \
-  --prompt "<motion + camera + dialogue-in-quotes + soundscape>" \
-  --image_url "<cdn_url>" \
-  --duration 5 --resolution 768P --prompt_expansion_mode balanced --download
+genmedia upload /opt/data/studio/assets/<season>/<char>/<sheet>.png
+genmedia upload /opt/data/studio/assets/<season>/<char>/<char>_Audio_Reference_v1.wav
+# → three cdn_urls
+genmedia run minimax/h3-max/reference-to-video \
+  --prompt "Image 1 is the keyframe — the shot opens on this exact composition: match its framing, blocking and lighting. Image 2 is <Char>'s identity reference — preserve the face, hair, build and outfit exactly; <Char> is the speaker. Audio 1 is <Char>'s voice reference — the line is delivered in this voice. <scene + action + camera + soundscape> <Char> says, <delivery>: \"<line>\"" \
+  --reference_image_urls "<keyframe_cdn>,<sheet_cdn>" \
+  --reference_audio_urls "<voice_cdn>" \
+  --duration 5 --resolution 768P --aspect_ratio 16:9 --prompt_expansion_mode balanced --download
 ```
 
-Feed the 1920×1080 keyframe from the edit stage as-is — H3 Max downsamples to its native 768p-class output (1344×768 @ 24 fps).
+Rules:
 
-Dialogue goes inside the prompt in quotes with a delivery tone
-(`NOVA says: "It's everything. The whole ledger." — tired, flat, quiet`).
-One speaker per clip, lines ≤ 5 seconds. The clip comes back with the voice
-and room sound baked in — there are no separate audio files.
+- **AR is explicit per project** — 16:9 in this Guide (pass `--aspect_ratio`; vertical-shorts projects use 9:16).
+- **One speaker per clip, lines ≤ 5 seconds.** Two-speaker exchanges are generated as separate clips (shot/reverse-shot).
+- **Voice consistency across shots = the same Audio ref file** every time that character speaks.
+- **Do NOT re-upload the location sheet at the clip stage** — the keyframe already carries the setting, and every clip request has a small free allowance of reference inputs (~4 images' worth). Reference videos cost extra and are rarely needed.
+- Dialogue goes inside the prompt in quotes with a delivery tone
+  (`NOVA says: "It's everything." — tired, flat, quiet`), matched to the
+  voice reference. One speaker per clip. The clip comes back with the voice
+  and room sound baked in — there are no separate audio files.
 
 ### 4K master (approved clip → upscaled)
 
@@ -105,7 +128,8 @@ otherwise re-time them.)
 
 Generation costs the owner real money **per successful output** (roughly
 US$0.17 per character sheet at high quality, US$0.04 per location or prop at
-medium, US$0.16 per keyframe, ~US$0.40 per 5-second clip at 768p, ~US$0.14 per 4K
+medium, US$0.16 per keyframe, ~US$0.01 per character for the one-time voice
+reference, ~US$0.40 per 5-second clip at 768p, ~US$0.14 per 4K
 upscale — check `genmedia pricing <model-id>` for live rates).
 
 - **Never start a paid batch without asking first.** Message the owner on

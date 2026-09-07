@@ -455,7 +455,7 @@ Notice what's missing from Case B versus a version that "fills in" the character
 
 ## Adapting to this studio's stack (Hermes / fal.ai — added on adoption)
 
-This skill was written for Seedance 2.0 (15-second prompts). In this studio the video model is **MiniMax H3 Max** (`minimax/h3-max/image-to-video`).
+This skill was written for Seedance 2.0 (15-second prompts). In this studio the video model is **MiniMax H3 Max reference-to-video** (`minimax/h3-max/reference-to-video` — keyframe + character image refs + per-character voice refs; bindings live in the model registry).
 **Model binding is decided by the model registry (`references/model-registry.yaml` + `references/model-routing.md`), not hardcoded here.** The examples below use H3 Max as today's default; if the owner selects a different video model, re-read the registry + mapping protocol and adapt the per-CUT structure to that model. **Which model runs the video stage always comes from the registry.** **The two models have different, incompatible prompt structures — never let Seedance conventions leak into H3 prompts.** The shotlist HTML is the PLANNING layer; each model gets its own prompt format derived from it.
 
 ### The hard rule
@@ -469,7 +469,7 @@ This skill was written for Seedance 2.0 (15-second prompts). In this studio the 
 |---|---|
 | Style Prefix block | **Fold into H3's sections, never prepend.** Style/camera/skin lines → the 1–2 sentence style line opening `integrated_multimodal_description` (I2VA) or `detailed_description` (Ref2VA); ambient/audio lines → `overall_soundscape`; "no music" → `non_diegetic_music: N/A`; "8K/24fps" → drop (H3 Max is 768p, no such fields) |
 | 15s prompt, CUT 1/2/3 in one prompt | One CUT = one H3 generation (3–6s). Split scenes into as many prompts as cuts; each prompt is a full H3 block with its own `[Shot 1]` |
-| @handles (`@ANNA`) | Plan-layer labels only. In the H3 prompt they become `<Subject N>` numbered labels in `subject_definitions` (references passed via `image_urls`), e.g. `<Subject 1> is the woman whose appearance comes from <Picture 1>` |
+| @handles (`@ANNA`) | Plan-layer labels only. In the H3 prompt they become **`Image N` / `Audio N` labels in upload-list order** (`--reference_image_urls` keyframe first + sheets, `--reference_audio_urls` voice ref), each ref given an explicit job (e.g. `Image 1 is the keyframe — match its composition…; Audio 1 is Anna's voice reference`). The model's IR maps these to H3's internal `<Picture N>`/`<Subject N>` — never write `<Picture N>` into the fal input |
 | Camera lines ("Low-angle 35mm dolly-in") | Translate into H3 camera-motion vocabulary in natural English inside the shot: `The camera pushes in with small amplitude at slow speed ...` (Zoom/Push In/Pan/Tilt/Truck/Arc/Tracking/Static/Shake/POV + amplitude + speed — see `minimax-h3-prompting` §4.2) |
 | Dialogue | H3 syntax, not bare quotes: speaker ID `(S1)` + identifying phrase + verbatim line inside `<d>`: `The young woman with a quiet, breathy voice (S1) says: <d>[English] I get off at the next station.</d>` One speaker per clip, lines ≤ 5s |
 | Ground-truth rule ("every prompt is the model's entire universe") | **Carries over unchanged** — restate location and physical state in full in every prompt, never "same as before." This is model-agnostic and applies to H3 harder than Seedance |
