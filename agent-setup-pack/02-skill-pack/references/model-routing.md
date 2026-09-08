@@ -22,6 +22,15 @@ binding is living data** ("which model" changes — and appends instead of overr
 > frame dimensions. Today that's H3 Max ⇒ single 1920×1080 (16:9) first frame (supersampled; the model downsamples to its 1344×768 canvas). If the project's video
 > binding wants other dims or a frame pair, the keyframe stage re-derives from it.
 
+## Editing vs regenerating an EXISTING asset image (task routing)
+
+The `reference_images` stage now has two profiles — **`new-sheet-from-prompt`** (text-to-image, whole sheet) and **`edit-existing-image`** (`openai/gpt-image-2/edit`). Pick by what changed:
+
+- **Words changed** — the description/prompt on the card was edited (wrong jawline, wrong era, "make it a bookshop, not a cafe") → re-draft the sheet prompt and re-run the **whole sheet** (txt2img profile, same AR/quality tier).
+- **The existing image is the instruction** — the owner points at an image they can see ("using image-2.png, extract the top-left panel and go wider", "re-light this one") → **edit that image** with the `gpt-image-2-asset-edit` profile: upload the image, pass it as `image_urls`, describe the change in the prompt, deliver a SINGLE image at the asset's AR/quality tier. Never re-run the whole-sheet text prompt for an image-driven change.
+- **Deliver under a NEW versioned filename** — the old take stays on the card until the owner stars the new one (never overwrite).
+- **Quote the fal price before running** (≈ US$0.04 at 1536×864 medium, US$0.158 at 1920×1080 high — check the live table).
+
 ## Binding scope — precedence (resolved highest → lowest at generation time)
 
 | Level | What it sets | Example |

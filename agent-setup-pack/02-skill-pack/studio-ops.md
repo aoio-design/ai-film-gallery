@@ -177,6 +177,14 @@ Rules
 - Characters/locations/props reused in later seasons keep their original
   files. Reference them from their home season folder — never copy, rename,
   or regenerate them elsewhere unless the owner asks for a new version.
+- **Image-driven vs word-driven change.** When the owner asks to change an
+  image they can see ("using image-2, extract the top-left panel and go
+  wider", "re-light this one"), EDIT that image with `openai/gpt-image-2/edit`
+  — the image itself is the reference (`--image_urls '["<cdn>"]'`) — never
+  re-run the whole-sheet text prompt. When the owner changed the *words*
+  instead (description/prompt edited on the card), re-run the whole sheet
+  from the amended prompt. Registry: `gpt-image-2-asset-edit`
+  (task `edit-existing-image`) vs `gpt-image-2` (task `new-sheet-from-prompt`).
 
 ## Episode script pane
 

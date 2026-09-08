@@ -39,6 +39,7 @@ error means the key works. To see any model's exact flags:
 |---|---|---|
 | Character reference sheets | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":1024}'`, `--quality high`, `--output_format png` |
 | Location & prop reference images | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":864}'`, `--quality medium`, `--output_format png` |
+| Edits to an existing asset image | `openai/gpt-image-2/edit` | upload that image → `--image_urls '["<cdn>"]'`, single image at the asset's AR (location 1536×864 / character 1536×1024), quality tier follows the asset |
 | First-frame edits (keyframes) | `openai/gpt-image-2/edit` | `--image_urls <refs>`, `--image_size '{"width":1920,"height":1080}'`, `--quality high` |
 | Reference voices (per character, once) | `fal-ai/elevenlabs/tts/eleven-v3` | 7-second line per character (~US$0.01); saved as `<season>_<CharacterName>_Audio_Reference_v1.wav` |
 | Video clips (sound + cloned voice) | `minimax/h3-max/reference-to-video` | `--reference_image_urls <keyframe, then char sheets>` `--reference_audio_urls <speaker's voice wav>`, `--duration 5`, `--resolution 768P`, `--aspect_ratio 16:9`, `--prompt_expansion_mode balanced` |
@@ -66,10 +67,13 @@ genmedia upload /opt/data/studio/assets/<season>/<asset>/<file>.png
 # → prints a cdn_url like https://v3b.fal.media/files/b/...
 genmedia run openai/gpt-image-2/edit \
   --prompt "<composition prompt: put the subject from image 1 in the setting from image 2…>" \
-  --image_urls "<cdn_url_1>,<cdn_url_2>" --image_size '{"width":1920,"height":1080}' --quality high --output_format png --download
+  --image_urls '["<cdn_url_1>","<cdn_url_2>"]' --image_size '{"width":1920,"height":1080}' --quality high --output_format png --download
 ```
 
 (Render keyframes at **1920×1080 (16:9)** by default — supersampled above H3 Max's 768p-class canvas (1344×768) so the model downsamples clean detail. `image_urls` accepts up to 16 refs. Optional `mask_url`: white = editable, black = preserved. Match the project's aspect ratio: a vertical-shorts project renders keyframes 1080×1920 and passes `--aspect_ratio 9:16` on clips.)
+
+### Asset image edit (rework an EXISTING reference image)
+When the owner points at an image they can already see and asks for a change ("extract the top-left panel and go wider", "re-light this one"), EDIT that image — upload it, pass it as `--image_urls '["<cdn>"]'`, and say what the image shows + the ONE change. **Never re-run the whole-sheet text prompt for an image-driven change.** Deliver a SINGLE image at the asset's AR and quality tier (location 1536×864 medium / character 1536×1024 high), saved under a NEW versioned filename — the old take stays until the owner stars the new one. If instead the owner changed the *words* (edited the card's description/prompt), that IS a whole-sheet re-run from the amended prompt. Quote the fal price before running.
 
 ### Reference voice (per character — generate once, reuse on every clip)
 
@@ -94,7 +98,7 @@ genmedia upload /opt/data/studio/assets/<season>/<char>/<char>_Audio_Reference_v
 # → three cdn_urls
 genmedia run minimax/h3-max/reference-to-video \
   --prompt "Image 1 is the keyframe — the shot opens on this exact composition: match its framing, blocking and lighting. Image 2 is <Char>'s identity reference — preserve the face, hair, build and outfit exactly; <Char> is the speaker. Audio 1 is <Char>'s voice reference — the line is delivered in this voice. <scene + action + camera + soundscape> <Char> says, <delivery>: \"<line>\"" \
-  --reference_image_urls "<keyframe_cdn>,<sheet_cdn>" \
+  --reference_image_urls '["<keyframe_cdn>","<sheet_cdn>"]' \
   --reference_audio_urls "<voice_cdn>" \
   --duration 5 --resolution 768P --aspect_ratio 16:9 --prompt_expansion_mode balanced --download
 ```

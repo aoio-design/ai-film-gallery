@@ -18,7 +18,7 @@
 #
 # Append under the matching `stage:` key. bump `last_verified` when you re-confirm a profile.
 
-registry_version: 1.0.0
+registry_version: 1.1.0
 
 binding_scopes:            # resolved highest -> lowest at generation time
   - shot                   # one shot -> one alternative model (e.g. Ep3-12A -> seedance-2.5)
@@ -60,6 +60,25 @@ profiles:
     frame_pair: false
     source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
     last_verified: "2026-09-02"
+    verified_by: owner
+    task: new-sheet-from-prompt   # text-to-image: whole sheet from the drafted prompt (word-driven changes re-run this)
+
+  - id: gpt-image-2-asset-edit
+    stage: reference_images
+    name: GPT Image 2 edit (rework an EXISTING asset image)
+    model: openai/gpt-image-2/edit
+    state: mapped
+    default: true
+    task: edit-existing-image      # image-driven change: the existing image IS the reference
+    accepts_refs: true             # image_urls (up to 16) - pass the existing image; optional mask_url for surgical edits
+    quality: "tier follows the asset type (character high / location+prop medium)"
+    cost: "US$0.04 (1536x864 medium) / US$0.158 (1920x1080 high) - fal live table 8 Sep 2026"
+    prompt_dialect: "change-driven: say what the existing image shows, then the ONE change (wider field of view / extract a panel / re-light / re-dress); everything else stays identical"
+    quality_dialect: "ROUTE RULE: a request that points at an image the owner can SEE ('using image-2.png, extract the top-left panel and go wider') = EDIT that image - never re-run the whole-sheet text prompt. A changed description/prompt on the card (words changed) = whole-sheet re-run via the txt2img profile. Deliver under a NEW versioned filename; the old take stays until the owner stars the new one."
+    dims: "single image at the asset's sheet AR: location 1536x864 / character 1536x1024 / prop 1024x768; keyframe-edit work stays 1920x1080"
+    frame_pair: false
+    source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
+    last_verified: "2026-09-08"
     verified_by: owner
 
   - id: gpt-image-2-edit
