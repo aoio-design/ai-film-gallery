@@ -118,7 +118,7 @@ look broken.
 4. Generate at 768p, upscale later
 5. Character consistency via reference images + @tags
 6. Physical cues, not emotions
-7. Clips 3–6 seconds
+7. Keep clips 5–15 seconds (H3 Max accepts nothing under 5s)
 
 See also: `ai-film-keyframe-authoring` (first-frame prompts), `fal-ai-ops`
 (generation commands), and the Prompt & Template Pack.
