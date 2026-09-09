@@ -85,6 +85,18 @@ by the owner in their video editor.
   its descriptive versioned name (the studio-ops skill's naming standard) —
   never a bare `image.png`/`video.mp4`, and never overwrite an existing
   file. Masters go in `masters/`.
+- **The card's prompt field is the reviewed words; the sent prompt lives in a
+  provenance map.** A shot's `image_prompt`/`video_prompt` in its
+  `metadata.json` are what the owner reviewed and what the NEXT run must send
+  verbatim — generators READ them, never write them. After each successful
+  generation, record the exact text actually sent under
+  `metadata["prompts"][<take filename>] = {"prompt": …, "model": …,
+  "sent_at": …}`. That provenance map is a BACKEND-ONLY audit record: never
+  render it in the Studio UI. Draft-authoring scripts must refuse to touch any
+  card that already holds media (drafting happens only BEFORE generation).
+  Two writers fighting over one field is how a review surface ends up
+  displaying text that never ran — one field, one meaning, immutable
+  send-log. (This is the same contract the owner's own studio follows.)
 
 ## Where things live
 

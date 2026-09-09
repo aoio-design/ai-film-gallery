@@ -489,10 +489,15 @@ const PLAYLIST = [
   function updateLabel() {
     cntEl.textContent = 'Clip ' + (idx + 1) + '/' + PLAYLIST.length;
     nowEl.textContent = PLAYLIST[idx].id;
-    highlightCard(PLAYLIST[idx].id);
-    followCard(PLAYLIST[idx].id);
     /* Deliberately does NOT set the agent context — that only changes on a real
        click, otherwise playback silently re-tags the user's feedback. */
+  }
+  /* Card highlight + follow + script sync only once playback actually starts —
+     NOT on page load (previously updateLabel() ran at init, which highlighted
+     and scrolled to the first playlist card on every refresh). */
+  function activateCard() {
+    highlightCard(PLAYLIST[idx].id);
+    followCard(PLAYLIST[idx].id);
     if (window.syncScriptToShot) window.syncScriptToShot(PLAYLIST[idx].id);
   }
   function loadClip(i) {
@@ -501,7 +506,7 @@ const PLAYLIST = [
     pv.load();
     updateLabel();
   }
-  function playClip(i) { loadClip(i); pv.play().catch(() => {}); }
+  function playClip(i) { loadClip(i); activateCard(); pv.play().catch(() => {}); }
 
   btnPlay.addEventListener('click', () => {
     if (!pv.src) loadClip(0);
@@ -512,7 +517,7 @@ const PLAYLIST = [
   btnLoop.addEventListener('click', () => { loopOn = !loopOn; btnLoop.classList.toggle('active', loopOn); });
   btnFollow.addEventListener('click', () => { followOn = !followOn; btnFollow.classList.toggle('active', followOn); });
 
-  pv.addEventListener('play', () => updatePlayBtn(true));
+  pv.addEventListener('play', () => { updatePlayBtn(true); activateCard(); });
   pv.addEventListener('pause', () => updatePlayBtn(false));
   pv.addEventListener('ended', () => {
     if (idx < PLAYLIST.length - 1) playClip(idx + 1);

@@ -208,6 +208,19 @@ field. Feedback on the script lives in that JSON's `feedback[]` too.
 5. **The agent uploads assets** (characters, locations, props) into
    `assets/<season>/<asset_id>/` so the owner can review and leave feedback
    on them — same feedback loop as shots.
+6. **The prompt you see on the card IS what the next run will send — and
+   what actually ran is recorded, not displayed.** A shot's
+   `image_prompt`/`video_prompt` (in `shots/<project>/<shot>/metadata.json`)
+   are the owner-reviewed words: the NEXT generation sends them verbatim, and
+   no generator or script may overwrite them after a take exists. When you
+   generate, record the EXACT text you sent in
+   `metadata["prompts"]["<take file>"] = {"prompt", "model", "sent_at"}` —
+   that map is a backend-only audit record (never render it in the Studio
+   UI; it exists so any take's true prompt can be recovered from disk).
+   Drafting scripts ("write the image prompt for every shot so I can review
+   them") may only touch cards that have NO media yet — never re-run a
+   draft writer over generated cards, or the card will show text that never
+   ran. One field, one meaning; the send-log is immutable.
 
 ## The production loop (follow this order — it is the owner's workflow)
 
