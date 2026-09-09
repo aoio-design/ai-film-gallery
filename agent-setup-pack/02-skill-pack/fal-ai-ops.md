@@ -40,7 +40,7 @@ error means the key works. To see any model's exact flags:
 | Character reference sheets | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":1024}'`, `--quality high`, `--output_format png` |
 | Location & prop reference images | `openai/gpt-image-2` | `--image_size '{"width":1536,"height":864}'`, `--quality medium`, `--output_format png` |
 | Edits to an existing asset image | `openai/gpt-image-2/edit` | upload that image → `--image_urls '["<cdn>"]'`, single image at the asset's AR (location 1536×864 / character 1536×1024), quality tier follows the asset |
-| First-frame edits (keyframes) | `openai/gpt-image-2/edit` | `--image_urls <refs>`, `--image_size '{"width":1920,"height":1080}'`, `--quality high` |
+| First-frame edits (keyframes) | `openai/gpt-image-2/edit` | `--image_urls <refs>`, `--image_size '{"width":1920,"height":1080}'` (16:9 default; a vertical 9:16 project → `'{"width":1152,"height":2048}'`), `--quality high` |
 | Reference voices (per character, once) | `fal-ai/elevenlabs/tts/eleven-v3` | 7-second line per character (~US$0.01); saved as `<season>_<CharacterName>_Audio_Reference_v1.wav` |
 | Video clips (sound + cloned voice) | `minimax/h3-max/reference-to-video` | `--reference_image_urls <keyframe, then char sheets>` `--reference_audio_urls <speaker's voice wav>`, `--duration 5`, `--resolution 768P`, `--aspect_ratio 16:9`, `--prompt_expansion_mode balanced` |
 | Upscaler (masters) | `fal-ai/bytedance-upscaler/upscale/video` | `--target_resolution 4k`, `--enhancement_preset aigc`, `--target_fps 24` |
@@ -70,7 +70,7 @@ genmedia run openai/gpt-image-2/edit \
   --image_urls '["<cdn_url_1>","<cdn_url_2>"]' --image_size '{"width":1920,"height":1080}' --quality high --output_format png --download
 ```
 
-(Render keyframes at **1920×1080 (16:9)** by default — supersampled above H3 Max's 768p-class canvas (1344×768) so the model downsamples clean detail. `image_urls` accepts up to 16 refs. Optional `mask_url`: white = editable, black = preserved. Match the project's aspect ratio: a vertical-shorts project renders keyframes 1080×1920 and passes `--aspect_ratio 9:16` on clips.)
+(Render keyframes at **1920×1080 (16:9)** by default — supersampled above H3 Max's 768p-class canvas (1344×768) so the model downsamples clean detail. `image_urls` accepts up to 16 refs. Optional `mask_url`: white = editable, black = preserved. Match the project's aspect ratio: a vertical-shorts project renders keyframes **1152×2048** (tell your agent "this is a vertical 9:16 project" when you start — 1080×1920 is not a valid custom size) and passes `--aspect_ratio 9:16` on clips. Character sheets and location images are always landscape — only keyframes follow the project's shape.)
 
 ### Asset image edit (rework an EXISTING reference image)
 When the owner points at an image they can already see and asks for a change ("extract the top-left panel and go wider", "re-light this one"), EDIT that image — upload it, pass it as `--image_urls '["<cdn>"]'`, and say what the image shows + the ONE change. **Never re-run the whole-sheet text prompt for an image-driven change.** Deliver a SINGLE image at the asset's AR and quality tier (location 1536×864 medium / character 1536×1024 high), saved under a NEW versioned filename — the old take stays until the owner stars the new one. If instead the owner changed the *words* (edited the card's description/prompt), that IS a whole-sheet re-run from the amended prompt. Quote the fal price before running.
@@ -105,7 +105,7 @@ genmedia run minimax/h3-max/reference-to-video \
 
 Rules:
 
-- **AR is explicit per project** — 16:9 in this Guide (pass `--aspect_ratio`; vertical-shorts projects use 9:16).
+- **AR is explicit per project** — 16:9 in this Guide (pass `--aspect_ratio`; vertical-shorts projects use 9:16, keyframes 1152×2048).
 - **One speaker per clip, lines ≤ 5 seconds.** Two-speaker exchanges are generated as separate clips (shot/reverse-shot).
 - **Voice consistency across shots = the same Audio ref file** every time that character speaks.
 - **Do NOT re-upload the location sheet at the clip stage** — the keyframe already carries the setting, and every clip request has a small free allowance of reference inputs (~4 images' worth). Reference videos cost extra and are rarely needed.

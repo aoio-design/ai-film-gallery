@@ -106,9 +106,11 @@ in one request. The composition prompt describes how the references combine —
 put the character from one reference into the setting from another. The
 typical keyframe call uploads two: the character sheet and the location image.
 
-Render every keyframe at a **fixed 1920×1080 (16:9)**, quality high — the frame
-is supersampled above H3 Max's native 1344×768 canvas so the video model
-downsamples clean detail (exact command: see the `fal-ai-ops` skill).
+Render every keyframe at the **project's shape**, quality high — 1920×1080 (16:9) by
+default, or **1152×2048 for a vertical 9:16 project** (say "this is a vertical
+project" when you start). The frame is supersampled above H3 Max's 768p-class
+canvas (1344×768 / 768×1344) so the video model downsamples clean detail
+(exact command: see the `fal-ai-ops` skill).
 
 Verify the generated image actually contains the right character and place
 before generating video — a wrong keyframe wastes a paid video clip.

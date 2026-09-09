@@ -75,7 +75,7 @@ profiles:
     cost: "US$0.04 (1536x864 medium) / US$0.158 (1920x1080 high) - fal live table 8 Sep 2026"
     prompt_dialect: "change-driven: say what the existing image shows, then the ONE change (wider field of view / extract a panel / re-light / re-dress); everything else stays identical"
     quality_dialect: "ROUTE RULE: a request that points at an image the owner can SEE ('using image-2.png, extract the top-left panel and go wider') = EDIT that image - never re-run the whole-sheet text prompt. A changed description/prompt on the card (words changed) = whole-sheet re-run via the txt2img profile. Deliver under a NEW versioned filename; the old take stays until the owner stars the new one."
-    dims: "single image at the asset's sheet AR: location 1536x864 / character 1536x1024 / prop 1024x768; keyframe-edit work stays 1920x1080"
+    dims: "single image at the asset's sheet AR: location 1536x864 / character 1536x1024 / prop 1024x768; keyframe edits follow the PROJECT AR (1920x1080 or 1152x2048 vertical)"
     frame_pair: false
     source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
     last_verified: "2026-09-08"
@@ -93,7 +93,7 @@ profiles:
     prompt_dialect: "composition-from-references: put subject from ref N into setting from ref M"
     quality_dialect: "same fidelity vocab as txt2img; CRITICAL: preserve the ONE face — the sheet's
       facial close-up must read as the character. mouth closed/neutral on dialogue shots."
-    dims: "1920x1080 fixed 16:9 (supersample ~1.4x; video binding downsamples to its 768p-class canvas)"
+    dims: "PROJECT AR: 16:9 -> 1920x1080 (supersample ~1.4x); 9:16 vertical -> 1152x2048 (1080x1920 INVALID — custom dims need multiples of 16); video binding downsamples to its 768p-class canvas"
     frame_pair: false            # single first frame — unless the SELECTED video binding requires a pair
     source_of_truth: ["https://fal.ai/models/openai/gpt-image-2"]
     last_verified: "2026-09-02"
@@ -155,7 +155,7 @@ profiles:
     stage: video
     name: MiniMax H3 Max (reference-to-video) — CURRENT global default
     model: minimax/h3-max/reference-to-video
-    state: mapped   # smoke test passed Sep 7 2026 (Ep2-74, ~US$0.57 incl. keyframe): Image-1-as-keyframe anchors frame 0, Audio-1 voice clone lands, IR job-mapping verified via expanded_prompt; AR 16:9 explicit confirmed
+    state: mapped   # smoke test passed Sep 7 2026 (Ep2-74, ~US$0.57 incl. keyframe): Image-1-as-keyframe anchors frame 0, Audio-1 voice clone lands, IR job-mapping verified via expanded_prompt; AR 16:9 explicit confirmed; 9:16 vertical smoke-tested Sep 9 (keyframe 1152x2048 -> clip 768x1344)
     default: true
     cost: "US$0.08/s @ 768P (~US$0.40 per 5s) + reference tokens: 4,096 free, then $0.02/1K (image = w*h/1024 tok; audio ~80 tok/s; video refs ~7,459 tok/s @ 768p — AVOID, ~$0.66 per 5s clip ref)"
     prompt_dialect: "fal labels by LIST ORDER — Image 1, Image 2, ..., Audio 1, ... (the model's IR maps them to H3's native <Picture N>/<Audio N>). Dense six-section-style body remains the strongest input; give every reference an explicit job; dialogue written in quotes with the delivery tone and 'matching Audio N's voice' at the line"
