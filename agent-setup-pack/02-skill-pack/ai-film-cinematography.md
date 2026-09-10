@@ -358,7 +358,7 @@ The camera direction should describe the **progression within the shot**, e.g.:
 
 ### Why This Format Works for AI
 
-1. **The video model generates 3-6 second clips** — each sub-scene maps to one generation
+1. **The video model generates 5–15 second clips (5s floor)** — each sub-scene maps to one generation
 2. **Consistent framing within a clip** — easier for the model than a scene that mixes wide and closeup
 3. **Clear approval workflow** — approve/reject individual shots without redoing the whole scene
 4. **Each card gets 2 attachments** (first + last frame) and produces 1 video — clean mapping

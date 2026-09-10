@@ -521,7 +521,7 @@ Shot size: [Progression of shot sizes]
 
 ### Why Break Into Sub-Scenes?
 
-1. **The video model generates 3-6 second clips** — each sub-scene is one clip
+1. **The video model generates 5–15 second clips (5s floor)** — each sub-scene is one clip
 2. **Different shot sizes = different prompts** — wide establishing shots need different composition than closeups
 3. **Review granularity** — the user can approve/reject individual camera angles without redoing the whole scene
 4. **Consistency** — each sub-scene references the same approved character + set assets from the consistency tracker

@@ -30,7 +30,7 @@ by the owner in their video editor.
 
 ```
 1. IDEA        →  talk it through with the owner; nothing is created yet
-2. SCRIPT      →  write it, break it into 3–6 second shots (see
+2. SCRIPT      →  write it, break it into 5–15 second shots — H3 Max's floor is 5s (see
                   ai-film-scriptwriting)
 3. WORDS OK    →  two gates, in order: owner approves the SCRIPT first, then
                   you write the character bible + asset text and they approve

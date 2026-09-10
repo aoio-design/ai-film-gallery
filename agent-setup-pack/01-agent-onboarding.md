@@ -81,8 +81,8 @@ defaults, not the number to quote.
 > 1. **Idea chat** — I bring an idea, you ask questions and shape it with me.
 >    Nothing is created yet. (This is also when you learn the project — see
 >    step 4 above.)
-> 2. **Write it up** — when I say go, write the script, break it into 3–6
->    second shots, and populate my studio: the project/season, the episode
+> 2. **Write it up** — when I say go, write the script, break it into 5–15
+>    second shots (the model's floor is 5s), and populate my studio: the project/season, the episode
 >    cards and every shot card, with the episode script in the script pane.
 >    Words only — no image, audio or video generation at this stage. Then
 >    STOP and tell me the script is ready for review. Do not build the

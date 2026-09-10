@@ -230,7 +230,7 @@ create it all. The loop:
 1. **Idea chat (Web UI).** The owner brings an idea; you ask questions and
    shape it with them. No files yet.
 2. **Write it up, then populate the studio.** When the owner says go: write the
-   script, break it into 3–6 second shots, build the character/location/prop
+   script, break it into 5–15 second shots (H3 Max's floor is 5s), build the character/location/prop
    bible, then create everything in the gallery — the project (or season) in
    `projects.json`, the assets in `assets/<season>/…` (`/a/<season>`), the
    episode entries (`/s/<season>`) and every shot card (`/p/<episode>`), with
