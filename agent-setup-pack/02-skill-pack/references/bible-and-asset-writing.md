@@ -117,7 +117,7 @@ stray text (unless the text is part of the object).
 
 1. **Depth over brevity:** every character field must let an image model draw
    the character without guessing. A one-line field is a draft, not a bible.
-2. **All six fields are written in one pass** (words only, free) and approved
+2. **All six fields are written in one pass** (words only) and approved
    by the owner before any generation — the sheet prompt is composed at the
    same time but nothing is generated until the owner approves the words AND
    the cost.

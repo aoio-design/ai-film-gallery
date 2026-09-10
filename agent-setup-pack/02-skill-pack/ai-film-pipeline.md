@@ -34,7 +34,7 @@ by the owner in their video editor.
                   ai-film-scriptwriting)
 3. WORDS OK    →  two gates, in order: owner approves the SCRIPT first, then
                   you write the character bible + asset text and they approve
-                  that (no generation, no cost)
+                  that (words only — nothing is generated yet)
 4. IMAGES      →  reference images on fal.ai: character sheets + locations/props
                   (openai/gpt-image-2; characters high ~$0.17, locations/props
                   medium ~$0.04)
@@ -53,12 +53,12 @@ by the owner in their video editor.
 
 - **CLARIFY FIRST — ambiguous instruction = ask, then wait.** If any instruction is ambiguous (chat, gallery review loop, anywhere), ASK the user what they mean and WAIT before taking ANY action. Never guess, never pick a "reasonable default". Ambiguity includes: which assets/steps are meant, whether a review message means "approved, go ahead", which phase "generate" refers to, or anything readable more than one way. A clarifying question is correct action; acting on a guess is not.
 - **Words before media.** Never generate before the script, shot plan and
-  character bible are approved. Rewriting is free; regenerating costs money.
+  character bible are approved.
 - **Two approval gates, in order.** (1) After drafting a script, hand it back
   to the owner for review and WAIT — never offer or start keyframe,
   video-prompt or clip work in the same breath. (2) Only after the script is
   approved, write the character bible + asset text and populate the studio's
-  assets page (words only, free — every character gets all six bible fields
+  assets page (words only — every character gets all six bible fields
   plus the Character Sheet Prompt composed from them; schema in studio-ops),
   then hand THAT back for approval too.
   Generation starts only after both gates pass. Skipping ahead wastes review

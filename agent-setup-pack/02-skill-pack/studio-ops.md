@@ -235,7 +235,7 @@ create it all. The loop:
    `projects.json`, the assets in `assets/<season>/…` (`/a/<season>`), the
    episode entries (`/s/<season>`) and every shot card (`/p/<episode>`), with
    the episode script in `_episode_script.json`. **Words only at this stage —
-   no generation, no cost** — but every asset card already carries its
+   nothing is generated** — but every asset card already carries its
    **image prompt** (Characters: `character_sheet_prompt`; Locations/Props:
    `prompt`) drafted from the bible fields, so the owner reviews the prompt
    and the description together.
@@ -324,7 +324,7 @@ Studio's Talk-to-your-agent drawer**:
 ```text
 hermes cron create 'every 5m' --name 'Studio feedback watcher' --deliver local \
   --monitor-script studio-feedback-watch.py \
-  --prompt 'New feedback appeared in the Studio (via the Talk-to-your-agent drawer). Open each reported file, read every feedback entry in full, and act on it: revise the referenced script lines, shots, or asset prompts (text edits cost nothing). Then append a reply to /opt/data/studio/shots/_agent_replies.json as [{"timestamp": "...", "project": "<project id from the file path, or null>", "text": "what you changed"}] so the owner sees it in the drawer. Preserve existing records.
+  --prompt 'New feedback appeared in the Studio (via the Talk-to-your-agent drawer). Open each reported file, read every feedback entry in full, and act on it: revise the referenced script lines, shots, or asset prompts. Then append a reply to /opt/data/studio/shots/_agent_replies.json as [{"timestamp": "...", "project": "<project id from the file path, or null>", "text": "what you changed"}] so the owner sees it in the drawer. Preserve existing records.
 GENERATION / PAID WORK: this cron session has NO paid key and must NEVER attempt generation (no images, clips, upscaling). When the owner asks to generate: (1) look up and state the fal.ai cost, (2) do NOT generate — tell the owner to go back to the WebUI/Telegram/WhatsApp to run it with their paid session, and (3) if they forgot the flow, point them back to their live chat to trigger it. Report concisely what you changed.'
 ```
 
@@ -356,9 +356,9 @@ same loop — there is only one copy of the wiring, driven by files on disk.
    `shots/_studio_feedback.json`).
 2. The **Studio feedback watcher** cron (every 5 min) scans all of those
    locations via `studio-feedback-watch.py`. Only when a *new* note appears
-   does it wake you (the agent), so it costs nothing while idle.
+   does it wake you (the agent).
 3. You read the note, **edit the text** (script line, prompt, character
-   description — free, just do it), then **append a reply** to
+   description), then **append a reply** to
    `shots/_agent_replies.json`:
    `[{"timestamp":"…","project":"<project id or null>","text":"what you changed"}]`.
    Keep any existing records — do NOT wipe the file.
